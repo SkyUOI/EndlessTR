@@ -25,7 +25,7 @@ namespace EndlessTR.UI
             mainPanel.Height.Set(200f, 0f);
             mainPanel.HAlign = 0.5f;
             mainPanel.VAlign = 0.5f;
-            
+
 
             // 添加正上方标题
             UITextPanel<string> titlePanel = new UITextPanel<string>("Welcome to EndlessTR!");
