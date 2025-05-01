@@ -1,3 +1,3 @@
-namespace EndlessTR.WorldGeneration.ExtendingMap;
+namespace EndlessTR.WorldGeneration;
 
 public class ExtendingMap { }
