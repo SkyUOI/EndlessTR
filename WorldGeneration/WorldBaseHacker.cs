@@ -11,6 +11,7 @@ public class Hacker
     public static void HackAllFunc()
     {
         HackInWorld();
+        ModifyConsts();
     }
 
     private static void HackInWorld()
@@ -47,5 +48,11 @@ public class Hacker
             }
         });
         cursor.EmitRet();
+    }
+
+    private static void ModifyConsts()
+    {
+        Main.rightWorld = float.MinValue;
+        Main.leftWorld = float.MaxValue;
     }
 }
