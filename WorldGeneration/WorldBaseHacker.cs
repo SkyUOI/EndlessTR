@@ -2,6 +2,7 @@ using MonoMod.Cil;
 using System;
 using System.Reflection;
 using Terraria;
+using Terraria.GameContent.Generation;
 using Terraria.ModLoader;
 
 namespace EndlessTR.WorldGeneration;
@@ -10,6 +11,7 @@ public class Hacker
 {
     public static void HackAllFunc()
     {
+        HackEvilGeneration();
         HackInWorld();
         ModifyConsts();
     }
@@ -50,8 +52,30 @@ public class Hacker
         cursor.EmitRet();
     }
 
-    private static void HackEvilGneeration() {
+    private static void HackEvilGeneration()
+    {
+        WorldGen.ModifyPass((PassLegacy)WorldGen.VanillaGenPasses["Corruption"], ILEvilGeneration);
+    }
 
+    private static void ILEvilGeneration(ILContext il)
+    {
+        var cursor = new ILCursor(il);
+        // for debug usage
+        // var s = new String("");
+        // foreach (var instruction in il.Body.Instructions)
+        // {
+        //     s += $"IL_{instruction.Offset:X4}: {instruction.OpCode} {instruction.Operand}\n";
+        // }
+        // throw new Exception(s);
+        cursor.EmitDelegate(() =>
+        {
+            WorldGen.drunkWorldGen = true;
+        });
+        cursor.Index = il.Body.Instructions.Count - 1;
+        cursor.EmitDelegate(() =>
+        {
+            WorldGen.drunkWorldGen = false;
+        });
     }
 
     private static void ModifyConsts()
