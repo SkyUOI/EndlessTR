@@ -11,19 +11,29 @@ using Terraria.Audio;
 using Terraria.GameContent.UI.Elements;
 using Terraria.GameContent.UI.States;
 using Terraria.ID;
+using Terraria.IO;
 using Terraria.Localization;
 using Terraria.ModLoader;
+using Terraria.Social;
 using Terraria.UI;
 
 namespace EndlessTR.UI
 {
     public class DifferentTypeWorldSelection : UIState
     {
+        private enum WorldDifficultyId
+        {
+            Normal,
+            Expert,
+            Master,
+            Creative
+        }
         public UIPanel mainPanel;
         public static bool Visible = false;
 
         private string _WorldName;
         private string _WorldSeed;
+        private WorldDifficultyId _optionDifficulty;
 
         private UICharacterNameButton _worldNameButton;
         private UICharacterNameButton _worldSeedButton;
@@ -92,7 +102,7 @@ namespace EndlessTR.UI
 
             uITextPanel2.OnMouseOver += FadedMouseOver;
             uITextPanel2.OnMouseOut += FadedMouseOut;
-            // uITextPanel2.OnLeftMouseDown += Click_NamingAndCreating;
+            uITextPanel2.OnLeftMouseDown += Click_NamingAndCreating;
             uITextPanel2.SetSnapPoint("Create", 0);
             outerContainer.Append(uITextPanel2);
         }
@@ -192,6 +202,29 @@ namespace EndlessTR.UI
             Main.OpenWorldSelectUI();
         }
 
+        private void Click_NamingAndCreating(UIMouseEvent evt, UIElement listeningElement)
+        {
+            SoundEngine.PlaySound(SoundID.MenuOpen);
+            if (string.IsNullOrEmpty(_WorldName))
+            {
+                _WorldName = "";
+                Main.clrInput();
+                UIVirtualKeyboard uIVirtualKeyboard = new UIVirtualKeyboard(Lang.menu[48].Value, "", OnFinishedNamingAndCreating, GoBackHere);
+                uIVirtualKeyboard.SetMaxInputLength(27);
+                Main.MenuUI.SetState(uIVirtualKeyboard);
+            }
+            else
+            {
+                FinishCreatingWorld();
+            }
+        }
+
+        private void OnFinishedNamingAndCreating(string name)
+        {
+            OnFinishedSettingName(name);
+            FinishCreatingWorld();
+        }
+
         private void FadedMouseOver(UIMouseEvent evt, UIElement listeningElement)
         {
             SoundEngine.PlaySound(SoundID.MenuOpen);
@@ -200,6 +233,42 @@ namespace EndlessTR.UI
         private void FadedMouseOut(UIMouseEvent evt, UIElement listeningElement)
         {
             SoundEngine.PlaySound(SoundID.MenuClose);
+        }
+
+        private void FinishCreatingWorld()
+        {
+            if (_WorldSeed == null)
+            {
+                _WorldSeed = "";
+            }
+            Main.maxTilesX = 6400;
+            Main.maxTilesY = 1800;
+
+            WorldGen.setWorldSize();
+            switch (_optionDifficulty)
+            {
+                case WorldDifficultyId.Creative:
+                    Main.GameMode = 3;
+                    break;
+                case WorldDifficultyId.Normal:
+                    Main.GameMode = 0;
+                    break;
+                case WorldDifficultyId.Expert:
+                    Main.GameMode = 1;
+                    break;
+                case WorldDifficultyId.Master:
+                    Main.GameMode = 2;
+                    break;
+            }
+
+            Main.ActiveWorldFileData = WorldFile.CreateMetadata(Main.worldName = _WorldName.Trim(), SocialAPI.Cloud != null && SocialAPI.Cloud.EnabledByDefault, Main.GameMode);
+            if (_WorldSeed.Length == 0)
+                Main.ActiveWorldFileData.SetSeedToRandom();
+            else
+                Main.ActiveWorldFileData.SetSeed(_WorldSeed);
+
+            Main.menuMode = 10;
+            WorldGen.CreateNewWorld();
         }
     }
 

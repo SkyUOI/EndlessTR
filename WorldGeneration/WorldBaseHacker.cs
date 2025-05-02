@@ -50,6 +50,10 @@ public class Hacker
         cursor.EmitRet();
     }
 
+    private static void HackEvilGneeration() {
+
+    }
+
     private static void ModifyConsts()
     {
         Main.rightWorld = float.MinValue;
