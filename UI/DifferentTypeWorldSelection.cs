@@ -35,6 +35,8 @@ namespace EndlessTR.UI
         private string _WorldSeed;
         private WorldDifficultyId _optionDifficulty;
 
+        private GroupOptionButton<WorldDifficultyId>[] _difficultyButtons;
+
         private UICharacterNameButton _worldNameButton;
         private UICharacterNameButton _worldSeedButton;
 
@@ -62,7 +64,90 @@ namespace EndlessTR.UI
             // 添加返回和创建按钮
             MakeBackAndCreatebuttons(mainPanel);
 
+            // 添加难度选择按钮
+            MakeWorldDifficultyOptions(mainPanel);
+
             Append(mainPanel);
+        }
+
+        private void MakeWorldDifficultyOptions(UIElement outerContainer)
+        {
+            WorldDifficultyId[] array = new WorldDifficultyId[4] {
+                WorldDifficultyId.Creative,
+                WorldDifficultyId.Normal,
+                WorldDifficultyId.Expert,
+                WorldDifficultyId.Master
+            };
+
+            LocalizedText[] array2 = new LocalizedText[4] {
+                Language.GetText("UI.Creative"),
+                Language.GetText("UI.Normal"),
+                Language.GetText("UI.Expert"),
+                Language.GetText("UI.Master")
+            };
+
+            LocalizedText[] array3 = new LocalizedText[4] {
+                Language.GetText("UI.WorldDescriptionCreative"),
+                Language.GetText("UI.WorldDescriptionNormal"),
+                Language.GetText("UI.WorldDescriptionExpert"),
+                Language.GetText("UI.WorldDescriptionMaster")
+            };
+
+            Color[] array4 = new Color[4] {
+                Main.creativeModeColor,
+                Color.White,
+                Main.mcColor,
+                Main.hcColor
+            };
+
+            string[] array5 = new string[4] {
+                "Images/UI/WorldCreation/IconDifficultyCreative",
+                "Images/UI/WorldCreation/IconDifficultyNormal",
+                "Images/UI/WorldCreation/IconDifficultyExpert",
+                "Images/UI/WorldCreation/IconDifficultyMaster"
+            };
+            float usableWidthPercent = 1f;
+            GroupOptionButton<WorldDifficultyId>[] array6 = new GroupOptionButton<WorldDifficultyId>[array.Length];
+            for (int i = 0; i < array6.Length; i++)
+            {
+                GroupOptionButton<WorldDifficultyId> groupOptionButton = new GroupOptionButton<WorldDifficultyId>(array[i], array2[i], array3[i], array4[i], array5[i], 1f, 1f, 16f);
+                groupOptionButton.Width = StyleDimension.FromPixelsAndPercent(-1 * (array6.Length - 1), 1f / (float)array6.Length * usableWidthPercent);
+                groupOptionButton.Left = StyleDimension.FromPercent(1f - usableWidthPercent);
+                groupOptionButton.HAlign = (float)i / (float)(array6.Length - 1);
+                groupOptionButton.Top.Set(0f, 0.6f);
+                groupOptionButton.OnLeftMouseDown += ClickDifficultyOption;
+                groupOptionButton.SetSnapPoint("difficulty", i);
+                outerContainer.Append(groupOptionButton);
+                array6[i] = groupOptionButton;
+            }
+
+            _difficultyButtons = array6;
+
+            SetDefaultOption();
+        }
+
+        private void SetDefaultOption()
+        {
+            GroupOptionButton<WorldDifficultyId>[] difficultyButtons = _difficultyButtons;
+            for (int i = 0; i < difficultyButtons.Length; i++)
+            {
+                difficultyButtons[i].SetCurrentOption(WorldDifficultyId.Normal);
+            }
+
+            _optionDifficulty = WorldDifficultyId.Normal;
+
+        }
+
+        private void ClickDifficultyOption(UIMouseEvent evt, UIElement listeningElement)
+        {
+            GroupOptionButton<WorldDifficultyId> groupOptionButton = (GroupOptionButton<WorldDifficultyId>)listeningElement;
+            _optionDifficulty = groupOptionButton.OptionValue;
+            GroupOptionButton<WorldDifficultyId>[] difficultyButtons = _difficultyButtons;
+            for (int i = 0; i < difficultyButtons.Length; i++)
+            {
+                difficultyButtons[i].SetCurrentOption(groupOptionButton.OptionValue);
+            }
+
         }
 
 
@@ -119,8 +204,6 @@ namespace EndlessTR.UI
             };
 
             uICharacterNameButton.OnLeftMouseDown += ClickSetName;
-            uICharacterNameButton.OnMouseOver += FadedMouseOver;
-            uICharacterNameButton.OnMouseOut += FadedMouseOut;
             uICharacterNameButton.SetSnapPoint("Name", 0);
             mainPanel.Append(uICharacterNameButton);
             _worldNameButton = uICharacterNameButton;
@@ -129,15 +212,13 @@ namespace EndlessTR.UI
             {
                 Width = StyleDimension.FromPixelsAndPercent(0f, 1f),
                 HAlign = 0f,
-                VAlign = 0.6f,
+                VAlign = 0.5f,
                 Left = new StyleDimension(0f, 0f),
                 Top = StyleDimension.FromPixelsAndPercent(0f, 0f),
                 DistanceFromTitleToOption = 29f
             };
 
             uICharacterNameButton2.OnLeftMouseDown += ClickSetSeed;
-            uICharacterNameButton2.OnMouseOver += FadedMouseOver;
-            uICharacterNameButton2.OnMouseOut += FadedMouseOut;
             uICharacterNameButton2.SetSnapPoint("Seed", 0);
             mainPanel.Append(uICharacterNameButton2);
             _worldSeedButton = uICharacterNameButton2;
@@ -227,12 +308,15 @@ namespace EndlessTR.UI
 
         private void FadedMouseOver(UIMouseEvent evt, UIElement listeningElement)
         {
-            SoundEngine.PlaySound(SoundID.MenuOpen);
+            SoundEngine.PlaySound(SoundID.MenuTick);
+            ((UIPanel)evt.Target).BackgroundColor = new Color(73, 94, 171);
+            ((UIPanel)evt.Target).BorderColor = Colors.FancyUIFatButtonMouseOver;
         }
 
         private void FadedMouseOut(UIMouseEvent evt, UIElement listeningElement)
         {
-            SoundEngine.PlaySound(SoundID.MenuClose);
+            ((UIPanel)evt.Target).BackgroundColor = new Color(63, 82, 151) * 0.8f;
+            ((UIPanel)evt.Target).BorderColor = Color.Black;
         }
 
         private void FinishCreatingWorld()
