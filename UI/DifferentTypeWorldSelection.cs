@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection.Metadata;
+using Humanizer;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
@@ -19,30 +20,41 @@ namespace EndlessTR.UI
     public class DifferentTypeWorldSelection : UIState
     {
         public UIPanel mainPanel;
+        public static bool Visible = false;
+
+        private string _WorldName;
+        private string _WorldSeed;
+
+        private UICharacterNameButton _worldNameButton;
+        private UICharacterNameButton _worldSeedButton;
 
         public override void OnInitialize()
         {
             mainPanel = new UIPanel();
             mainPanel.SetPadding(5);
             mainPanel.Width.Set(400f, 0f);
-            mainPanel.Height.Set(200f, 0f);
+            mainPanel.Height.Set(300f, 0f);
             mainPanel.HAlign = 0.5f;
             mainPanel.VAlign = 0.5f;
 
 
             // 添加正上方标题
-            UITextPanel<string> titlePanel = new UITextPanel<string>("Create your endless world!");
+            UITextPanel<string> titlePanel = new UITextPanel<string>("Create your endless world!", 1.5f);
             titlePanel.Width.Set(0f, 1f);     // 宽度占满父容器
             titlePanel.Height.Set(40f, 0f);   // 高度 40 像素
             titlePanel.BackgroundColor = new Color(0, 0, 100, 200); // 半透明黑色背景
             titlePanel.HAlign = 0.5f;         // 水平居中
             mainPanel.Append(titlePanel);
 
+            // 添加世界名称和种子
+            MakeNameAndSeedButtons(mainPanel);
+
             // 添加返回和创建按钮
             MakeBackAndCreatebuttons(mainPanel);
 
             Append(mainPanel);
         }
+
 
         static public void hook_to_load(ILContext il)
         {
@@ -85,24 +97,109 @@ namespace EndlessTR.UI
             outerContainer.Append(uITextPanel2);
         }
 
+        private void MakeNameAndSeedButtons(UIElement outerContainer)
+        {
+            UICharacterNameButton uICharacterNameButton = new UICharacterNameButton(Language.GetText("UI.WorldCreationName"), Language.GetText("UI.WorldCreationNameEmpty"), Language.GetText("UI.WorldDescriptionName"))
+            {
+                Width = StyleDimension.FromPixelsAndPercent(0f, 1f),
+                HAlign = 0f,
+                VAlign = 0.3f,
+                Left = new StyleDimension(0f, 0f),
+                Top = StyleDimension.FromPixelsAndPercent(0.3f, 0f)
+            };
+
+            uICharacterNameButton.OnLeftMouseDown += ClickSetName;
+            uICharacterNameButton.OnMouseOver += FadedMouseOver;
+            uICharacterNameButton.OnMouseOut += FadedMouseOut;
+            uICharacterNameButton.SetSnapPoint("Name", 0);
+            mainPanel.Append(uICharacterNameButton);
+            _worldNameButton = uICharacterNameButton;
+
+            UICharacterNameButton uICharacterNameButton2 = new UICharacterNameButton(Language.GetText("UI.WorldCreationSeed"), Language.GetText("UI.WorldCreationSeedEmpty"), Language.GetText("UI.WorldDescriptionSeed"))
+            {
+                Width = StyleDimension.FromPixelsAndPercent(0f, 1f),
+                HAlign = 0f,
+                VAlign = 0.6f,
+                Left = new StyleDimension(0f, 0f),
+                Top = StyleDimension.FromPixelsAndPercent(0f, 0f),
+                DistanceFromTitleToOption = 29f
+            };
+
+            uICharacterNameButton2.OnLeftMouseDown += ClickSetSeed;
+            uICharacterNameButton2.OnMouseOver += FadedMouseOver;
+            uICharacterNameButton2.OnMouseOut += FadedMouseOut;
+            uICharacterNameButton2.SetSnapPoint("Seed", 0);
+            mainPanel.Append(uICharacterNameButton2);
+            _worldSeedButton = uICharacterNameButton2;
+
+        }
+
+        private void ClickSetName(UIMouseEvent evt, UIElement listeningElement)
+        {
+            SoundEngine.PlaySound(SoundID.MenuTick);
+            Main.clrInput();
+            UIVirtualKeyboard uIVirtualKeyboard = new UIVirtualKeyboard(Lang.menu[48].Value, "", OnFinishedSettingName, GoBackHere, 0, allowEmpty: true);
+            uIVirtualKeyboard.SetMaxInputLength(27);
+            Main.MenuUI.SetState(uIVirtualKeyboard);
+
+        }
+
+        private void ClickSetSeed(UIMouseEvent evt, UIElement listeningElement)
+        {
+            SoundEngine.PlaySound(SoundID.MenuTick);
+            Main.clrInput();
+            UIVirtualKeyboard uIVirtualKeyboard = new UIVirtualKeyboard(Language.GetTextValue("UI.EnterSeed"), "", OnFinishedSettingSeed, GoBackHere, 0, allowEmpty: true);
+            uIVirtualKeyboard.SetMaxInputLength(40);
+            Main.MenuUI.SetState(uIVirtualKeyboard);
+        }
+        private void OnFinishedSettingName(string name)
+        {
+            _WorldName = name.Trim();
+            UpdateInputFields();
+            GoBackHere();
+        }
+
+        private void OnFinishedSettingSeed(string seed)
+        {
+            _WorldSeed = seed.Trim();
+            // ProcessSeed(out var processedSeed);
+            // _optionSeed = processedSeed;
+            UpdateInputFields();
+            // UpdateSliders();
+            // UpdatePreviewPlate();
+            GoBackHere();
+        }
+
+        private void UpdateInputFields()
+        {
+            _worldNameButton.SetContents(_WorldName);
+            _worldNameButton.Recalculate();
+            _worldNameButton.TrimDisplayIfOverElementDimensions(27);
+            _worldNameButton.Recalculate();
+            _worldSeedButton.SetContents(_WorldSeed);
+            _worldSeedButton.Recalculate();
+            _worldSeedButton.TrimDisplayIfOverElementDimensions(40);
+            _worldSeedButton.Recalculate();
+        }
+        private void GoBackHere()
+        {
+            Main.MenuUI.SetState(this);
+        }
+
         private void Click_GoBack(UIMouseEvent evt, UIElement listeningElement)
         {
             SoundEngine.PlaySound(SoundID.MenuTick);
-            Main.MenuUI.GoBack();
+            Main.OpenWorldSelectUI();
         }
 
         private void FadedMouseOver(UIMouseEvent evt, UIElement listeningElement)
         {
             SoundEngine.PlaySound(SoundID.MenuOpen);
-            ((UIPanel)evt.Target).BackgroundColor = new Color(73, 94, 171);
-            ((UIPanel)evt.Target).BorderColor = Colors.FancyUIFatButtonMouseOver;
         }
 
         private void FadedMouseOut(UIMouseEvent evt, UIElement listeningElement)
         {
             SoundEngine.PlaySound(SoundID.MenuClose);
-            ((UIPanel)evt.Target).BackgroundColor = new Color(63, 82, 151) * 0.8f;
-            ((UIPanel)evt.Target).BorderColor = Color.Black;
         }
     }
 
@@ -110,6 +207,7 @@ namespace EndlessTR.UI
     {
         private UserInterface _interface;
         public DifferentTypeWorldSelection UI;
+
 
         public override void Load()
         {
@@ -136,7 +234,10 @@ namespace EndlessTR.UI
                     "EndlessTR: DifferentTypeWorldSelection",
                     () =>
                     {
-                        _interface.Draw(Main.spriteBatch, new GameTime());
+                        if (DifferentTypeWorldSelection.Visible)
+                        {
+                            _interface.Draw(Main.spriteBatch, new GameTime());
+                        }
                         return true;
                     },
                     InterfaceScaleType.UI
