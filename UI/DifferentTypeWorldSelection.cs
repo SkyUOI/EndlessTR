@@ -72,40 +72,40 @@ namespace EndlessTR.UI
 
         private void MakeWorldDifficultyOptions(UIElement outerContainer)
         {
-            WorldDifficultyId[] array = new WorldDifficultyId[4] {
+            WorldDifficultyId[] array = [
                 WorldDifficultyId.Creative,
                 WorldDifficultyId.Normal,
                 WorldDifficultyId.Expert,
                 WorldDifficultyId.Master
-            };
+            ];
 
-            LocalizedText[] array2 = new LocalizedText[4] {
+            LocalizedText[] array2 = [
                 Language.GetText("UI.Creative"),
                 Language.GetText("UI.Normal"),
                 Language.GetText("UI.Expert"),
                 Language.GetText("UI.Master")
-            };
+            ];
 
-            LocalizedText[] array3 = new LocalizedText[4] {
+            LocalizedText[] array3 = [
                 Language.GetText("UI.WorldDescriptionCreative"),
                 Language.GetText("UI.WorldDescriptionNormal"),
                 Language.GetText("UI.WorldDescriptionExpert"),
                 Language.GetText("UI.WorldDescriptionMaster")
-            };
+            ];
 
-            Color[] array4 = new Color[4] {
+            Color[] array4 = [
                 Main.creativeModeColor,
                 Color.White,
                 Main.mcColor,
                 Main.hcColor
-            };
+            ];
 
-            string[] array5 = new string[4] {
+            string[] array5 = [
                 "Images/UI/WorldCreation/IconDifficultyCreative",
                 "Images/UI/WorldCreation/IconDifficultyNormal",
                 "Images/UI/WorldCreation/IconDifficultyExpert",
                 "Images/UI/WorldCreation/IconDifficultyMaster"
-            };
+            ];
             float usableWidthPercent = 1f;
             GroupOptionButton<WorldDifficultyId>[] array6 = new GroupOptionButton<WorldDifficultyId>[array.Length];
             for (int i = 0; i < array6.Length; i++)
@@ -325,8 +325,9 @@ namespace EndlessTR.UI
             {
                 _WorldSeed = "";
             }
-            Main.maxTilesX = 6400;
-            Main.maxTilesY = 1800;
+            // large world size
+            Main.maxTilesX = 8400;
+            Main.maxTilesY = 2400;
 
             WorldGen.setWorldSize();
             switch (_optionDifficulty)
