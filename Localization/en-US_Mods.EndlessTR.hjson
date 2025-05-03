@@ -1,1 +1,12 @@
+UI: {
+	WorldSelection.MigrateWorldsMessage:
+		'''
+		Where are my worlds???
 
+		EndlessTR does not support vanilla world files, so they will not appear.
+		However, once you close EndlessTR, you can access your original worlds again.
+		Please create a new world to play in EndlessTR.
+		Enjoy your journey in EndlessTR!
+		'''
+	WorldCreate.Title: Create your EndlessTR World!
+}
