@@ -12,6 +12,7 @@ namespace EndlessTR.UI
     {
         public static void Hack()
         {
+            HackGetWorldPathFromName();
             HackWorldMigrate();
             HackWorldList();
             if (Main.dedServ)
@@ -19,6 +20,24 @@ namespace EndlessTR.UI
                 return;
             }
             HackWorldCreation();
+        }
+
+        private static void HackGetWorldPathFromName()
+        {
+            var flag = BindingFlags.Public | BindingFlags.Static;
+            var GetWorldPathFromName = typeof(Main).GetMethod("GetWorldPathFromName", flag);
+            MonoModHooks.Modify(GetWorldPathFromName, ILGetWorldPathFromName);
+        }
+
+        private static void ILGetWorldPathFromName(ILContext il)
+        {
+            var cursor = new ILCursor(il);
+            for(int i = 1; i <= 4; ++i)
+            {
+                cursor.GotoNext(MoveType.Before, i => i.MatchLdstr(out var s) && s == ".wld");
+                cursor.Remove();
+                cursor.EmitLdstr(".ewld");
+            }
         }
 
         private static void HackWorldMigrate()
