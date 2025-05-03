@@ -1,0 +1,12 @@
+UI: {
+	WorldSelection.MigrateWorldsMessage:
+		'''
+		我原来的世界呢???
+		   
+		EndlessTR不支持原版世界文件, 所以它们不会显示,
+		但只要您关闭EndlessTR, 就能找到原来的世界
+		请创建新的世界以游玩EndlessTR
+		祝您的EndlessTR之旅愉快!
+		'''
+	WorldCreate.Title: 创建你的EndlessTR世界!
+}

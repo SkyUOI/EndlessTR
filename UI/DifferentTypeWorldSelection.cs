@@ -51,7 +51,7 @@ namespace EndlessTR.UI
 
 
             // 添加正上方标题
-            UITextPanel<string> titlePanel = new UITextPanel<string>("Create your endless world!", 1.5f);
+            UITextPanel<string> titlePanel = new UITextPanel<string>(Language.GetTextValue("Mods.EndlessTR.UI.WorldCreate.Title"), 1.5f);
             titlePanel.Width.Set(0f, 1f);     // 宽度占满父容器
             titlePanel.Height.Set(40f, 0f);   // 高度 40 像素
             titlePanel.BackgroundColor = new Color(0, 0, 100, 200); // 半透明黑色背景

@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MonoMod.Cil;
 using System;
 using System.Reflection;
@@ -11,12 +12,28 @@ namespace EndlessTR.UI
     {
         public static void Hack()
         {
+            HackWorldMigrate();
             HackWorldList();
             if (Main.dedServ)
             {
                 return;
             }
             HackWorldCreation();
+        }
+
+        private static void HackWorldMigrate()
+        {
+            var flag = BindingFlags.NonPublic | BindingFlags.Instance;
+            var WorldMigrate = typeof(UIWorldSelect).GetMethod("AddAutomaticWorldMigrationButtons", flag);
+            MonoModHooks.Modify(WorldMigrate, ILWorldMigrate);
+        }
+
+        private static void ILWorldMigrate(ILContext il)
+        {
+            var cursor = new ILCursor(il);
+            cursor.GotoNext(MoveType.Before, i => i.MatchLdstr(out var s) && s == "tModLoader.MigrateWorldsMessage");
+            cursor.Remove();
+            cursor.EmitLdstr("Mods.EndlessTR.UI.WorldSelection.MigrateWorldsMessage");
         }
 
         private static void HackWorldCreation()
