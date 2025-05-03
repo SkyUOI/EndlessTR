@@ -3,6 +3,7 @@ using System;
 using Terraria;
 using Terraria.GameContent.Generation;
 using Terraria.IO;
+using Terraria.ID;
 using Terraria.WorldBuilding;
 
 namespace EndlessTR.WorldGeneration;
@@ -13,136 +14,137 @@ public class EvilGeneration
 
     public void GenerateEvil(GenerationProgress progress, GameConfiguration passConfig)
     {
-        int num778 = Main.maxTilesX;
-        int num779 = 0;
-        int num780 = Main.maxTilesX;
-        int num781 = 0;
-        for (int num782 = 0; num782 < Main.maxTilesX; num782++)
+        int AvailableMaxBorderSide1 = Main.maxTilesX;
+        int AvailableMinBorderSide1 = 0;
+        int AvailableMaxBorderSide2 = Main.maxTilesX;
+        int AvailableMinBorderSide2 = 0;
+        for (int i = 0; i < Main.maxTilesX; i++)
         {
-            for (int num783 = 0; (double)num783 < Main.worldSurface; num783++)
+            for (int j = 0; (double)j < Main.worldSurface; j++)
             {
-                if (Main.tile[num782, num783].HasTile)
+                if (Main.tile[i, j].HasTile)
                 {
-                    if (Main.tile[num782, num783].TileType == 60)
+                    if (Main.tile[i, j].TileType == TileID.JungleGrass)
                     {
-                        if (num782 < num778)
-                            num778 = num782;
+                        if (i < AvailableMaxBorderSide1)
+                            AvailableMaxBorderSide1 = i;
 
-                        if (num782 > num779)
-                            num779 = num782;
+                        if (i > AvailableMinBorderSide1)
+                            AvailableMinBorderSide1 = i;
                     }
-                    else if (Main.tile[num782, num783].TileType == 147 || Main.tile[num782, num783].TileType == 161)
+                    else if (Main.tile[i, j].TileType == TileID.SnowBlock || Main.tile[i, j].TileType == TileID.IceBlock)
                     {
-                        if (num782 < num780)
-                            num780 = num782;
+                        if (i < AvailableMaxBorderSide2)
+                            AvailableMaxBorderSide2 = i;
 
-                        if (num782 > num781)
-                            num781 = num782;
+                        if (i > AvailableMinBorderSide2)
+                            AvailableMinBorderSide2 = i;
                     }
                 }
             }
         }
 
-        int num784 = 10;
-        num778 -= num784;
-        num779 += num784;
-        num780 -= num784;
-        num781 += num784;
+        int ShortenSize = 10;
+        AvailableMaxBorderSide1 -= ShortenSize;
+        AvailableMinBorderSide1 += ShortenSize;
+        AvailableMaxBorderSide2 -= ShortenSize;
+        AvailableMinBorderSide2 += ShortenSize;
         int num785 = 500;
         int num786 = 100;
-        double num787 = (double)Main.maxTilesX * 0.00045;
+        double EvilSize = (double)Main.maxTilesX * 0.00045;
         bool generate_crim = false;
 
         if (generate_crim)
         {
             progress.Message = Lang.gen[72].Value;
-            for (int num788 = 0; (double)num788 < num787; num788++)
+            for (int i = 0; (double)i < EvilSize; i++)
             {
-                int num789 = num780;
-                int num790 = num781;
-                int num791 = num778;
-                int num792 = num779;
-                double value15 = (double)num788 / num787;
-                progress.Set(value15);
-                bool flag50 = false;
+                int num789 = AvailableMaxBorderSide2;
+                int num790 = AvailableMinBorderSide2;
+                int num791 = AvailableMaxBorderSide1;
+                int num792 = AvailableMinBorderSide1;
+                double GeneratingProgress = (double)i / EvilSize;
+                progress.Set(GeneratingProgress);
+                bool IsPositionOk = false;
                 int num793 = 0;
-                int num794 = 0;
-                int num795 = 0;
-                while (!flag50)
+                int EvilLeftBorder = 0;
+                int EvilRightBorder = 0;
+                while (!IsPositionOk)
                 {
-                    flag50 = true;
-                    int num796 = Main.maxTilesX / 2;
+                    IsPositionOk = true;
+                    int WorldMid = Main.maxTilesX / 2;
                     int num797 = 200;
 
                     num793 = WorldGen.genRand.Next(num785, Main.maxTilesX - num785);
 
-                    num794 = num793 - WorldGen.genRand.Next(200) - 100;
-                    num795 = num793 + WorldGen.genRand.Next(200) + 100;
-                    if (num794 < GenVars.evilBiomeBeachAvoidance)
-                        num794 = GenVars.evilBiomeBeachAvoidance;
+                    EvilLeftBorder = num793 - WorldGen.genRand.Next(200) - 100;
+                    EvilRightBorder = num793 + WorldGen.genRand.Next(200) + 100;
+                    if (EvilLeftBorder < GenVars.evilBiomeBeachAvoidance)
+                        EvilLeftBorder = GenVars.evilBiomeBeachAvoidance;
 
-                    if (num795 > Main.maxTilesX - GenVars.evilBiomeBeachAvoidance)
-                        num795 = Main.maxTilesX - GenVars.evilBiomeBeachAvoidance;
+                    if (EvilRightBorder > Main.maxTilesX - GenVars.evilBiomeBeachAvoidance)
+                        EvilRightBorder = Main.maxTilesX - GenVars.evilBiomeBeachAvoidance;
 
-                    if (num793 < num794 + GenVars.evilBiomeAvoidanceMidFixer)
-                        num793 = num794 + GenVars.evilBiomeAvoidanceMidFixer;
+                    if (num793 < EvilLeftBorder + GenVars.evilBiomeAvoidanceMidFixer)
+                        num793 = EvilLeftBorder + GenVars.evilBiomeAvoidanceMidFixer;
 
-                    if (num793 > num795 - GenVars.evilBiomeAvoidanceMidFixer)
-                        num793 = num795 - GenVars.evilBiomeAvoidanceMidFixer;
+                    if (num793 > EvilRightBorder - GenVars.evilBiomeAvoidanceMidFixer)
+                        num793 = EvilRightBorder - GenVars.evilBiomeAvoidanceMidFixer;
 
-                    if (GenVars.dungeonSide < 0 && num794 < 400)
-                        num794 = 400;
-                    else if (GenVars.dungeonSide > 0 && num794 > Main.maxTilesX - 400)
-                        num794 = Main.maxTilesX - 400;
+                    if (GenVars.dungeonSide < 0 && EvilLeftBorder < 400)
+                        EvilLeftBorder = 400;
+                    else if (GenVars.dungeonSide > 0 && EvilLeftBorder > Main.maxTilesX - 400)
+                        EvilLeftBorder = Main.maxTilesX - 400;
 
-                    if (num794 < GenVars.dungeonLocation + num786 && num795 > GenVars.dungeonLocation - num786)
-                        flag50 = false;
+                    if (EvilLeftBorder < GenVars.dungeonLocation + num786 && EvilRightBorder > GenVars.dungeonLocation - num786)
+                        IsPositionOk = false;
 
-                    if (num793 > num796 - num797 && num793 < num796 + num797)
-                        flag50 = false;
+                    if (num793 > WorldMid - num797 && num793 < WorldMid + num797)
+                        IsPositionOk = false;
 
-                    if (num794 > num796 - num797 && num794 < num796 + num797)
-                        flag50 = false;
+                    if (EvilLeftBorder > WorldMid - num797 && EvilLeftBorder < WorldMid + num797)
+                        IsPositionOk = false;
 
-                    if (num795 > num796 - num797 && num795 < num796 + num797)
-                        flag50 = false;
+                    if (EvilRightBorder > WorldMid - num797 && EvilRightBorder < WorldMid + num797)
+                        IsPositionOk = false;
 
                     if (num793 > GenVars.UndergroundDesertLocation.X && num793 < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
-                        flag50 = false;
+                        IsPositionOk = false;
 
-                    if (num794 > GenVars.UndergroundDesertLocation.X && num794 < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
-                        flag50 = false;
+                    if (EvilLeftBorder > GenVars.UndergroundDesertLocation.X && EvilLeftBorder < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
+                        IsPositionOk = false;
 
-                    if (num795 > GenVars.UndergroundDesertLocation.X && num795 < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
-                        flag50 = false;
+                    if (EvilRightBorder > GenVars.UndergroundDesertLocation.X && EvilRightBorder < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
+                        IsPositionOk = false;
 
-                    if (num794 < num790 && num795 > num789)
+                    if (EvilLeftBorder < num790 && EvilRightBorder > num789)
                     {
                         num789++;
                         num790--;
-                        flag50 = false;
+                        IsPositionOk = false;
                     }
 
-                    if (num794 < num792 && num795 > num791)
+                    if (EvilLeftBorder < num792 && EvilRightBorder > num791)
                     {
                         num791++;
                         num792--;
-                        flag50 = false;
+                        IsPositionOk = false;
                     }
                 }
 
                 WorldGen.CrimStart(num793, (int)GenVars.worldSurfaceLow - 10);
-                for (int num798 = num794; num798 < num795; num798++)
+                // 猩红化丛林
+                for (int j = EvilLeftBorder; j < EvilRightBorder; j++)
                 {
-                    for (int num799 = (int)GenVars.worldSurfaceLow; (double)num799 < Main.worldSurface - 1.0; num799++)
+                    for (int k = (int)GenVars.worldSurfaceLow; (double)k < Main.worldSurface - 1.0; k++)
                     {
-                        if (Main.tile[num798, num799].HasTile)
+                        if (Main.tile[j, k].HasTile)
                         {
-                            int num800 = num799 + WorldGen.genRand.Next(10, 14);
-                            for (int num801 = num799; num801 < num800; num801++)
+                            int num800 = k + WorldGen.genRand.Next(10, 14);
+                            for (int m = k; m < num800; m++)
                             {
-                                if (Main.tile[num798, num801].TileType == 60 && num798 >= num794 + WorldGen.genRand.Next(5) && num798 < num795 - WorldGen.genRand.Next(5))
-                                    Main.tile[num798, num801].TileType = 662;
+                                if (Main.tile[j, m].TileType == TileID.JungleGrass && j >= EvilLeftBorder + WorldGen.genRand.Next(5) && j < EvilRightBorder - WorldGen.genRand.Next(5))
+                                    Main.tile[j, m].TileType = TileID.CrimsonJungleGrass;
                             }
 
                             break;
@@ -150,88 +152,93 @@ public class EvilGeneration
                     }
                 }
 
-                double num802 = Main.worldSurface + 40.0;
-                for (int num803 = num794; num803 < num795; num803++)
+                double y_limit = Main.worldSurface + 40.0;
+                for (int j = EvilLeftBorder; j < EvilRightBorder; j++)
                 {
-                    num802 += (double)WorldGen.genRand.Next(-2, 3);
-                    if (num802 < Main.worldSurface + 30.0)
-                        num802 = Main.worldSurface + 30.0;
+                    // 防止生成在地表
+                    y_limit += (double)WorldGen.genRand.Next(-2, 3);
+                    if (y_limit < Main.worldSurface + 30.0)
+                        y_limit = Main.worldSurface + 30.0;
 
-                    if (num802 > Main.worldSurface + 50.0)
-                        num802 = Main.worldSurface + 50.0;
+                    if (y_limit > Main.worldSurface + 50.0)
+                        y_limit = Main.worldSurface + 50.0;
 
                     bool flag51 = false;
-                    for (int num804 = (int)GenVars.worldSurfaceLow; (double)num804 < num802; num804++)
+                    for (int k = (int)GenVars.worldSurfaceLow; (double)k < y_limit; k++)
                     {
-                        if (Main.tile[num803, num804].HasTile)
+                        if (Main.tile[j, k].HasTile)
                         {
-                            if (Main.tile[num803, num804].TileType == 53 && num803 >= num794 + WorldGen.genRand.Next(5) && num803 <= num795 - WorldGen.genRand.Next(5))
-                                Main.tile[num803, num804].TileType = 234;
 
-                            if ((double)num804 < Main.worldSurface - 1.0 && !flag51)
+                            if (Main.tile[j, k].TileType == TileID.Sand && j >= EvilLeftBorder + WorldGen.genRand.Next(5) && j <= EvilRightBorder - WorldGen.genRand.Next(5))
+                                Main.tile[j, k].TileType = TileID.Crimsand;
+
+                            if ((double)k < Main.worldSurface - 1.0 && !flag51)
                             {
-                                if (Main.tile[num803, num804].TileType == 0)
+                                if (Main.tile[j, k].TileType == TileID.Dirt)
                                 {
                                     WorldGen.grassSpread = 0;
-                                    WorldGen.SpreadGrass(num803, num804, 0, 199);
+                                    WorldGen.SpreadGrass(j, k, 0, TileID.CrimsonGrass);
                                 }
-                                else if (Main.tile[num803, num804].TileType == 59)
+                                else if (Main.tile[j, k].TileType == TileID.Mud)
                                 {
                                     WorldGen.grassSpread = 0;
-                                    WorldGen.SpreadGrass(num803, num804, 59, 662);
+                                    WorldGen.SpreadGrass(j, k, 59, TileID.CrimsonJungleGrass);
                                 }
                             }
 
                             flag51 = true;
-                            if (Main.tile[num803, num804].WallType == 216)
-                                Main.tile[num803, num804].WallType = 218;
-                            else if (Main.tile[num803, num804].WallType == 187)
-                                Main.tile[num803, num804].WallType = 221;
+                            // 猩红化
+                            if (Main.tile[j, k].WallType == WallID.HardenedSand)
+                                Main.tile[j, k].WallType = WallID.CrimsonHardenedSand;
+                            else if (Main.tile[j, k].WallType == WallID.Sandstone)
+                                Main.tile[j, k].WallType = WallID.CrimsonSandstone;
 
-                            if (Main.tile[num803, num804].TileType == 1)
+                            if (Main.tile[j, k].TileType == TileID.Stone)
                             {
-                                if (num803 >= num794 + WorldGen.genRand.Next(5) && num803 <= num795 - WorldGen.genRand.Next(5))
-                                    Main.tile[num803, num804].TileType = 203;
+                                if (j >= EvilLeftBorder + WorldGen.genRand.Next(5) && j <= EvilRightBorder - WorldGen.genRand.Next(5))
+                                    Main.tile[j, k].TileType = TileID.Crimstone;
                             }
-                            else if (Main.tile[num803, num804].TileType == 2)
+                            else if (Main.tile[j, k].TileType == TileID.Grass)
                             {
-                                Main.tile[num803, num804].TileType = 199;
+                                Main.tile[j, k].TileType = TileID.CrimsonGrass;
                             }
-                            else if (Main.tile[num803, num804].TileType == 60)
+                            else if (Main.tile[j, k].TileType == TileID.JungleGrass)
                             {
-                                Main.tile[num803, num804].TileType = 662;
+                                Main.tile[j, k].TileType = TileID.CrimsonJungleGrass;
                             }
-                            else if (Main.tile[num803, num804].TileType == 161)
+                            else if (Main.tile[j, k].TileType == TileID.IceBlock)
                             {
-                                Main.tile[num803, num804].TileType = 200;
+                                Main.tile[j, k].TileType = TileID.FleshIce;
                             }
-                            else if (Main.tile[num803, num804].TileType == 396)
+                            else if (Main.tile[j, k].TileType == TileID.Sandstone)
                             {
-                                Main.tile[num803, num804].TileType = 401;
+                                Main.tile[j, k].TileType = TileID.CrimsonSandstone;
                             }
-                            else if (Main.tile[num803, num804].TileType == 397)
+                            else if (Main.tile[j, k].TileType == TileID.HardenedSand)
                             {
-                                Main.tile[num803, num804].TileType = 399;
+                                Main.tile[j, k].TileType = TileID.CrimsonHardenedSand;
                             }
                         }
                     }
                 }
 
-                int num805 = WorldGen.genRand.Next(10, 15);
-                for (int num806 = 0; num806 < num805; num806++)
+                // 生成猩红祭坛
+                int AlterNums = WorldGen.genRand.Next(10, 15);
+                for (int j = 0; j < AlterNums; j++)
                 {
                     int num807 = 0;
-                    bool flag52 = false;
+                    bool AltarGenerateFinish = false;
                     int num808 = 0;
-                    while (!flag52)
+                    while (!AltarGenerateFinish)
                     {
                         num807++;
-                        int num809 = WorldGen.genRand.Next(num794 - num808, num795 + num808);
-                        int num810 = WorldGen.genRand.Next((int)(Main.worldSurface - (double)(num808 / 2)), (int)(Main.worldSurface + 100.0 + (double)num808));
-                        while (WorldGen.oceanDepths(num809, num810))
+                        int x_pos = WorldGen.genRand.Next(EvilLeftBorder - num808, EvilRightBorder + num808);
+                        int y_pos = WorldGen.genRand.Next((int)(Main.worldSurface - (double)(num808 / 2)), (int)(Main.worldSurface + 100.0 + (double)num808));
+                        // 调整祭坛到合适的位置进行生成
+                        while (WorldGen.oceanDepths(x_pos, y_pos))
                         {
-                            num809 = WorldGen.genRand.Next(num794 - num808, num795 + num808);
-                            num810 = WorldGen.genRand.Next((int)(Main.worldSurface - (double)(num808 / 2)), (int)(Main.worldSurface + 100.0 + (double)num808));
+                            x_pos = WorldGen.genRand.Next(EvilLeftBorder - num808, EvilRightBorder + num808);
+                            y_pos = WorldGen.genRand.Next((int)(Main.worldSurface - (double)(num808 / 2)), (int)(Main.worldSurface + 100.0 + (double)num808));
                         }
 
                         if (num807 > 100)
@@ -240,31 +247,31 @@ public class EvilGeneration
                             num807 = 0;
                         }
 
-                        if (!Main.tile[num809, num810].HasTile)
+                        if (!Main.tile[x_pos, y_pos].HasTile)
                         {
-                            for (; !Main.tile[num809, num810].HasTile; num810++)
+                            for (; !Main.tile[x_pos, y_pos].HasTile; y_pos++)
                             {
                             }
 
-                            num810--;
+                            y_pos--;
                         }
                         else
                         {
-                            while (Main.tile[num809, num810].HasTile && (double)num810 > Main.worldSurface)
+                            while (Main.tile[x_pos, y_pos].HasTile && (double)y_pos > Main.worldSurface)
                             {
-                                num810--;
+                                y_pos--;
                             }
                         }
 
-                        if ((num808 > 10 || (Main.tile[num809, num810 + 1].HasTile && Main.tile[num809, num810 + 1].TileType == 203)) && !WorldGen.IsTileNearby(num809, num810, 26, 3))
+                        if ((num808 > 10 || (Main.tile[x_pos, y_pos + 1].HasTile && Main.tile[x_pos, y_pos + 1].TileType == TileID.Crimstone)) && !WorldGen.IsTileNearby(x_pos, y_pos, TileID.DemonAltar, 3))
                         {
-                            WorldGen.Place3x2(num809, num810, 26, 1);
-                            if (Main.tile[num809, num810].TileType == 26)
-                                flag52 = true;
+                            WorldGen.Place3x2(x_pos, y_pos, TileID.DemonAltar, 1);
+                            if (Main.tile[x_pos, y_pos].TileType == TileID.DemonAltar)
+                                AltarGenerateFinish = true;
                         }
 
                         if (num808 > 100)
-                            flag52 = true;
+                            AltarGenerateFinish = true;
                     }
                 }
             }
@@ -275,96 +282,102 @@ public class EvilGeneration
         if (!generate_crim)
         {
             progress.Message = Lang.gen[20].Value;
-            for (int num811 = 0; (double)num811 < num787; num811++)
+            // 循环生成邪恶地形
+            for (int i = 0; (double)i < EvilSize; i++)
             {
-                int num812 = num780;
-                int num813 = num781;
-                int num814 = num778;
-                int num815 = num779;
-                double value16 = (double)num811 / num787;
-                progress.Set(value16);
-                bool flag53 = false;
+                int num812 = AvailableMaxBorderSide2;
+                int num813 = AvailableMinBorderSide2;
+                int num814 = AvailableMaxBorderSide1;
+                int num815 = AvailableMinBorderSide1;
+                double GeneratingProgress = (double)i / EvilSize;
+                progress.Set(GeneratingProgress);
+                bool IsPositionOK = false;
                 int num816 = 0;
-                int num817 = 0;
-                int num818 = 0;
-                while (!flag53)
+                int EvilLeftBorder = 0;
+                int EvilRightBorder = 0;
+                // 不断修正邪恶地形的位置，防止生成到错误的位置
+                while (!IsPositionOK)
                 {
-                    flag53 = true;
-                    int num819 = Main.maxTilesX / 2;
+                    IsPositionOK = true;
+                    int WorldMid = Main.maxTilesX / 2;
                     int num820 = 200;
                     num816 = WorldGen.genRand.Next(num785, Main.maxTilesX - num785);
-                    num817 = num816 - WorldGen.genRand.Next(200) - 100;
-                    num818 = num816 + WorldGen.genRand.Next(200) + 100;
-                    if (num817 < GenVars.evilBiomeBeachAvoidance)
-                        num817 = GenVars.evilBiomeBeachAvoidance;
+                    EvilLeftBorder = num816 - WorldGen.genRand.Next(200) - 100;
+                    EvilRightBorder = num816 + WorldGen.genRand.Next(200) + 100;
 
-                    if (num818 > Main.maxTilesX - GenVars.evilBiomeBeachAvoidance)
-                        num818 = Main.maxTilesX - GenVars.evilBiomeBeachAvoidance;
+                    // 防止海滩被腐化
+                    if (EvilLeftBorder < GenVars.evilBiomeBeachAvoidance)
+                        EvilLeftBorder = GenVars.evilBiomeBeachAvoidance;
 
-                    if (num816 < num817 + GenVars.evilBiomeAvoidanceMidFixer)
-                        num816 = num817 + GenVars.evilBiomeAvoidanceMidFixer;
+                    if (EvilRightBorder > Main.maxTilesX - GenVars.evilBiomeBeachAvoidance)
+                        EvilRightBorder = Main.maxTilesX - GenVars.evilBiomeBeachAvoidance;
 
-                    if (num816 > num818 - GenVars.evilBiomeAvoidanceMidFixer)
-                        num816 = num818 - GenVars.evilBiomeAvoidanceMidFixer;
+                    // 防止邪恶地形越过世界中点
+                    if (num816 < EvilLeftBorder + GenVars.evilBiomeAvoidanceMidFixer)
+                        num816 = EvilLeftBorder + GenVars.evilBiomeAvoidanceMidFixer;
 
-                    if (num817 < GenVars.dungeonLocation + num786 && num818 > GenVars.dungeonLocation - num786)
-                        flag53 = false;
+                    if (num816 > EvilRightBorder - GenVars.evilBiomeAvoidanceMidFixer)
+                        num816 = EvilRightBorder - GenVars.evilBiomeAvoidanceMidFixer;
 
-                    if (num816 > num819 - num820 && num816 < num819 + num820)
-                        flag53 = false;
+                    if (EvilLeftBorder < GenVars.dungeonLocation + num786 && EvilRightBorder > GenVars.dungeonLocation - num786)
+                        IsPositionOK = false;
 
-                    if (num817 > num819 - num820 && num817 < num819 + num820)
-                        flag53 = false;
+                    if (num816 > WorldMid - num820 && num816 < WorldMid + num820)
+                        IsPositionOK = false;
 
-                    if (num818 > num819 - num820 && num818 < num819 + num820)
-                        flag53 = false;
+                    if (EvilLeftBorder > WorldMid - num820 && EvilLeftBorder < WorldMid + num820)
+                        IsPositionOK = false;
+
+                    if (EvilRightBorder > WorldMid - num820 && EvilRightBorder < WorldMid + num820)
+                        IsPositionOK = false;
 
                     if (num816 > GenVars.UndergroundDesertLocation.X && num816 < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
-                        flag53 = false;
+                        IsPositionOK = false;
 
-                    if (num817 > GenVars.UndergroundDesertLocation.X && num817 < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
-                        flag53 = false;
+                    if (EvilLeftBorder > GenVars.UndergroundDesertLocation.X && EvilLeftBorder < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
+                        IsPositionOK = false;
 
-                    if (num818 > GenVars.UndergroundDesertLocation.X && num818 < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
-                        flag53 = false;
+                    if (EvilRightBorder > GenVars.UndergroundDesertLocation.X && EvilRightBorder < GenVars.UndergroundDesertLocation.X + GenVars.UndergroundDesertLocation.Width)
+                        IsPositionOK = false;
 
-                    if (num817 < num813 && num818 > num812)
+                    if (EvilLeftBorder < num813 && EvilRightBorder > num812)
                     {
                         num812++;
                         num813--;
-                        flag53 = false;
+                        IsPositionOK = false;
                     }
 
-                    if (num817 < num815 && num818 > num814)
+                    if (EvilLeftBorder < num815 && EvilRightBorder > num814)
                     {
                         num814++;
                         num815--;
-                        flag53 = false;
+                        IsPositionOK = false;
                     }
                 }
 
-                int num821 = 0;
-                for (int num822 = num817; num822 < num818; num822++)
+                int ChasmGenerateWaitCounter = 0;
+                for (int j = EvilLeftBorder; j < EvilRightBorder; j++)
                 {
-                    if (num821 > 0)
-                        num821--;
+                    // 不断移动，直到计数器归零，往下挖峡谷
+                    if (ChasmGenerateWaitCounter > 0)
+                        ChasmGenerateWaitCounter--;
 
-                    if (num822 == num816 || num821 == 0)
+                    if (j == num816 || ChasmGenerateWaitCounter == 0)
                     {
-                        for (int num823 = (int)GenVars.worldSurfaceLow; (double)num823 < Main.worldSurface - 1.0; num823++)
+                        for (int k = (int)GenVars.worldSurfaceLow; (double)k < Main.worldSurface - 1.0; k++)
                         {
-                            if (Main.tile[num822, num823].HasTile || Main.tile[num822, num823].WallType > 0)
+                            if (Main.tile[j, k].HasTile || Main.tile[j, k].WallType > 0)
                             {
-                                if (num822 == num816)
+                                if (j == num816)
                                 {
-                                    num821 = 20;
-                                    WorldGen.ChasmRunner(num822, num823, WorldGen.genRand.Next(150) + 150, makeOrb: true);
+                                    ChasmGenerateWaitCounter = 20;
+                                    WorldGen.ChasmRunner(j, k, WorldGen.genRand.Next(150) + 150, makeOrb: true);
                                 }
-                                else if (WorldGen.genRand.Next(35) == 0 && num821 == 0)
+                                else if (WorldGen.genRand.Next(35) == 0 && ChasmGenerateWaitCounter == 0)
                                 {
-                                    num821 = 30;
+                                    ChasmGenerateWaitCounter = 30;
                                     bool makeOrb = true;
-                                    WorldGen.ChasmRunner(num822, num823, WorldGen.genRand.Next(50) + 50, makeOrb);
+                                    WorldGen.ChasmRunner(j, k, WorldGen.genRand.Next(50) + 50, makeOrb);
                                 }
 
                                 break;
@@ -372,15 +385,15 @@ public class EvilGeneration
                         }
                     }
 
-                    for (int num824 = (int)GenVars.worldSurfaceLow; (double)num824 < Main.worldSurface - 1.0; num824++)
+                    for (int k = (int)GenVars.worldSurfaceLow; (double)k < Main.worldSurface - 1.0; k++)
                     {
-                        if (Main.tile[num822, num824].HasTile)
+                        if (Main.tile[j, k].HasTile)
                         {
-                            int num825 = num824 + WorldGen.genRand.Next(10, 14);
-                            for (int num826 = num824; num826 < num825; num826++)
+                            int num825 = k + WorldGen.genRand.Next(10, 14);
+                            for (int num826 = k; num826 < num825; num826++)
                             {
-                                if (Main.tile[num822, num826].TileType == 60 && num822 >= num817 + WorldGen.genRand.Next(5) && num822 < num818 - WorldGen.genRand.Next(5))
-                                    Main.tile[num822, num826].TileType = 661;
+                                if (Main.tile[j, num826].TileType == TileID.JungleGrass && j >= EvilLeftBorder + WorldGen.genRand.Next(5) && j < EvilRightBorder - WorldGen.genRand.Next(5))
+                                    Main.tile[j, num826].TileType = TileID.CorruptJungleGrass;
                             }
 
                             break;
@@ -388,102 +401,106 @@ public class EvilGeneration
                     }
                 }
 
-                double num827 = Main.worldSurface + 40.0;
-                for (int num828 = num817; num828 < num818; num828++)
+                double y_pos = Main.worldSurface + 40.0;
+                for (int j = EvilLeftBorder; j < EvilRightBorder; j++)
                 {
-                    num827 += (double)WorldGen.genRand.Next(-2, 3);
-                    if (num827 < Main.worldSurface + 30.0)
-                        num827 = Main.worldSurface + 30.0;
+                    // 地面向下一段距离
+                    // 防止生成到错误的位置
+                    y_pos += (double)WorldGen.genRand.Next(-2, 3);
+                    if (y_pos < Main.worldSurface + 30.0)
+                        y_pos = Main.worldSurface + 30.0;
 
-                    if (num827 > Main.worldSurface + 50.0)
-                        num827 = Main.worldSurface + 50.0;
+                    if (y_pos > Main.worldSurface + 50.0)
+                        y_pos = Main.worldSurface + 50.0;
 
                     bool flag54 = false;
-                    for (int num829 = (int)GenVars.worldSurfaceLow; (double)num829 < num827; num829++)
+                    for (int k = (int)GenVars.worldSurfaceLow; (double)k < y_pos; k++)
                     {
-                        if (Main.tile[num828, num829].HasTile)
+                        if (Main.tile[j, k].HasTile)
                         {
-                            if (Main.tile[num828, num829].TileType == 53 && num828 >= num817 + WorldGen.genRand.Next(5) && num828 <= num818 - WorldGen.genRand.Next(5))
-                                Main.tile[num828, num829].TileType = 112;
+                            if (Main.tile[j, k].TileType == TileID.Sand && j >= EvilLeftBorder + WorldGen.genRand.Next(5) && j <= EvilRightBorder - WorldGen.genRand.Next(5))
+                                Main.tile[j, k].TileType = TileID.Ebonsand;
 
-                            if ((double)num829 < Main.worldSurface - 1.0 && !flag54)
+                            if ((double)k < Main.worldSurface - 1.0 && !flag54)
                             {
-                                if (Main.tile[num828, num829].TileType == 0)
+                                if (Main.tile[j, k].TileType == TileID.Dirt)
                                 {
                                     WorldGen.grassSpread = 0;
-                                    WorldGen.SpreadGrass(num828, num829, 0, 23);
+                                    WorldGen.SpreadGrass(j, k, 0, 23);
                                 }
-                                else if (Main.tile[num828, num829].TileType == 59)
+                                else if (Main.tile[j, k].TileType == TileID.Mud)
                                 {
                                     WorldGen.grassSpread = 0;
-                                    WorldGen.SpreadGrass(num828, num829, 59, 661);
+                                    WorldGen.SpreadGrass(j, k, 59, TileID.CorruptJungleGrass);
                                 }
                             }
 
                             flag54 = true;
-                            if (Main.tile[num828, num829].WallType == 216)
-                                Main.tile[num828, num829].WallType = 217;
-                            else if (Main.tile[num828, num829].WallType == 187)
-                                Main.tile[num828, num829].WallType = 220;
+                            // 将原本正常的物品腐化掉
+                            if (Main.tile[j, k].WallType == WallID.HardenedSand)
+                                Main.tile[j, k].WallType = WallID.CorruptHardenedSand;
+                            else if (Main.tile[j, k].WallType == WallID.Sandstone)
+                                Main.tile[j, k].WallType = WallID.CorruptSandstone;
 
-                            if (Main.tile[num828, num829].TileType == 1)
+                            if (Main.tile[j, k].TileType == TileID.Stone)
                             {
-                                if (num828 >= num817 + WorldGen.genRand.Next(5) && num828 <= num818 - WorldGen.genRand.Next(5))
-                                    Main.tile[num828, num829].TileType = 25;
+                                if (j >= EvilLeftBorder + WorldGen.genRand.Next(5) && j <= EvilRightBorder - WorldGen.genRand.Next(5))
+                                    Main.tile[j, k].TileType = TileID.Ebonstone;
                             }
-                            else if (Main.tile[num828, num829].TileType == 2)
+                            else if (Main.tile[j, k].TileType == TileID.Grass)
                             {
-                                Main.tile[num828, num829].TileType = 23;
+                                Main.tile[j, k].TileType = TileID.CorruptGrass;
                             }
-                            else if (Main.tile[num828, num829].TileType == 60)
+                            else if (Main.tile[j, k].TileType == TileID.JungleGrass)
                             {
-                                Main.tile[num828, num829].TileType = 661;
+                                Main.tile[j, k].TileType = TileID.CorruptJungleGrass;
                             }
-                            else if (Main.tile[num828, num829].TileType == 161)
+                            else if (Main.tile[j, k].TileType == TileID.IceBlock)
                             {
-                                Main.tile[num828, num829].TileType = 163;
+                                Main.tile[j, k].TileType = TileID.CorruptIce;
                             }
-                            else if (Main.tile[num828, num829].TileType == 396)
+                            else if (Main.tile[j, k].TileType == TileID.Sandstone)
                             {
-                                Main.tile[num828, num829].TileType = 400;
+                                Main.tile[j, k].TileType = TileID.CorruptSandstone;
                             }
-                            else if (Main.tile[num828, num829].TileType == 397)
+                            else if (Main.tile[j, k].TileType == TileID.HardenedSand)
                             {
-                                Main.tile[num828, num829].TileType = 398;
+                                Main.tile[j, k].TileType = TileID.CorruptHardenedSand;
                             }
                         }
                     }
                 }
 
-                for (int num830 = num817; num830 < num818; num830++)
+                // 放置暗影珠
+                for (int j = EvilLeftBorder; j < EvilRightBorder; j++)
                 {
-                    for (int num831 = 0; num831 < Main.maxTilesY - 50; num831++)
+                    for (int k = 0; k < Main.maxTilesY - 50; k++)
                     {
-                        if (Main.tile[num830, num831].HasTile && Main.tile[num830, num831].TileType == 31)
+                        if (Main.tile[j, k].HasTile && Main.tile[j, k].TileType == TileID.ShadowOrbs)
                         {
-                            int num832 = num830 - 13;
-                            int num833 = num830 + 13;
-                            int num834 = num831 - 13;
-                            int num835 = num831 + 13;
-                            for (int num836 = num832; num836 < num833; num836++)
+                            int LeftBorder = j - 13;
+                            int RightBorder = j + 13;
+                            int TopBorder = k - 13;
+                            int BottomBorder = k + 13;
+                            for (int m = LeftBorder; m < RightBorder; m++)
                             {
-                                if (num836 > 10 && num836 < Main.maxTilesX - 10)
+                                if (m > 10 && m < Main.maxTilesX - 10)
                                 {
-                                    for (int num837 = num834; num837 < num835; num837++)
+                                    for (int n = TopBorder; n < BottomBorder; n++)
                                     {
-                                        if (Math.Abs(num836 - num830) + Math.Abs(num837 - num831) < 9 + WorldGen.genRand.Next(11) && WorldGen.genRand.Next(3) != 0 && Main.tile[num836, num837].TileType != 31)
+                                        if (Math.Abs(m - j) + Math.Abs(n - k) < 9 + WorldGen.genRand.Next(11) && WorldGen.genRand.Next(3) != 0 && Main.tile[m, n].TileType != TileID.ShadowOrbs)
                                         {
-                                            var tmp = Main.tile[num836, num837];
+                                            var tmp = Main.tile[m, n];
                                             tmp.HasTile = true;
-                                            Main.tile[num836, num837].TileType = 25;
-                                            if (Math.Abs(num836 - num830) <= 1 && Math.Abs(num837 - num831) <= 1)
-                                                tmp = Main.tile[num836, num837];
+                                            Main.tile[m, n].TileType = TileID.Ebonstone;
+                                            if (Math.Abs(m - j) <= 1 && Math.Abs(n - k) <= 1)
+                                                tmp = Main.tile[m, n];
                                             tmp.HasTile = false;
                                         }
 
-                                        if (Main.tile[num836, num837].TileType != 31 && Math.Abs(num836 - num830) <= 2 + WorldGen.genRand.Next(3) && Math.Abs(num837 - num831) <= 2 + WorldGen.genRand.Next(3))
+                                        if (Main.tile[m, n].TileType != TileID.ShadowOrbs && Math.Abs(m - j) <= 2 + WorldGen.genRand.Next(3) && Math.Abs(n - k) <= 2 + WorldGen.genRand.Next(3))
                                         {
-                                            var tmp = Main.tile[num836, num837];
+                                            var tmp = Main.tile[m, n];
                                             tmp.HasTile = false;
                                         }
                                     }
