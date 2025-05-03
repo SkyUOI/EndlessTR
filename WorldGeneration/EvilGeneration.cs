@@ -51,8 +51,9 @@ public class EvilGeneration
         int num785 = 500;
         int num786 = 100;
         double num787 = (double)Main.maxTilesX * 0.00045;
+        bool generate_crim = false;
 
-        if (flag49)
+        if (generate_crim)
         {
             progress.Message = Lang.gen[72].Value;
             for (int num788 = 0; (double)num788 < num787; num788++)
@@ -130,7 +131,7 @@ public class EvilGeneration
                     }
                 }
 
-                CrimStart(num793, (int)GenVars.worldSurfaceLow - 10);
+                WorldGen.CrimStart(num793, (int)GenVars.worldSurfaceLow - 10);
                 for (int num798 = num794; num798 < num795; num798++)
                 {
                     for (int num799 = (int)GenVars.worldSurfaceLow; (double)num799 < Main.worldSurface - 1.0; num799++)
@@ -171,13 +172,13 @@ public class EvilGeneration
                             {
                                 if (Main.tile[num803, num804].TileType == 0)
                                 {
-                                    grassSpread = 0;
-                                    SpreadGrass(num803, num804, 0, 199);
+                                    WorldGen.grassSpread = 0;
+                                    WorldGen.SpreadGrass(num803, num804, 0, 199);
                                 }
                                 else if (Main.tile[num803, num804].TileType == 59)
                                 {
-                                    grassSpread = 0;
-                                    SpreadGrass(num803, num804, 59, 662);
+                                    WorldGen.grassSpread = 0;
+                                    WorldGen.SpreadGrass(num803, num804, 59, 662);
                                 }
                             }
 
@@ -227,7 +228,7 @@ public class EvilGeneration
                         num807++;
                         int num809 = WorldGen.genRand.Next(num794 - num808, num795 + num808);
                         int num810 = WorldGen.genRand.Next((int)(Main.worldSurface - (double)(num808 / 2)), (int)(Main.worldSurface + 100.0 + (double)num808));
-                        while (oceanDepths(num809, num810))
+                        while (WorldGen.oceanDepths(num809, num810))
                         {
                             num809 = WorldGen.genRand.Next(num794 - num808, num795 + num808);
                             num810 = WorldGen.genRand.Next((int)(Main.worldSurface - (double)(num808 / 2)), (int)(Main.worldSurface + 100.0 + (double)num808));
@@ -255,9 +256,9 @@ public class EvilGeneration
                             }
                         }
 
-                        if ((num808 > 10 || (Main.tile[num809, num810 + 1].HasTile && Main.tile[num809, num810 + 1].TileType == 203)) && !IsTileNearby(num809, num810, 26, 3))
+                        if ((num808 > 10 || (Main.tile[num809, num810 + 1].HasTile && Main.tile[num809, num810 + 1].TileType == 203)) && !WorldGen.IsTileNearby(num809, num810, 26, 3))
                         {
-                            Place3x2(num809, num810, 26, 1);
+                            WorldGen.Place3x2(num809, num810, 26, 1);
                             if (Main.tile[num809, num810].TileType == 26)
                                 flag52 = true;
                         }
@@ -268,10 +269,10 @@ public class EvilGeneration
                 }
             }
 
-            CrimPlaceHearts();
+            WorldGen.CrimPlaceHearts();
         }
 
-        if (!flag49)
+        if (!generate_crim)
         {
             progress.Message = Lang.gen[20].Value;
             for (int num811 = 0; (double)num811 < num787; num811++)
@@ -291,7 +292,7 @@ public class EvilGeneration
                     flag53 = true;
                     int num819 = Main.maxTilesX / 2;
                     int num820 = 200;
-                    num816 = ((!drunkWorldGen) ? WorldGen.genRand.Next(num785, Main.maxTilesX - num785) : (GenVars.crimsonLeft ? WorldGen.genRand.Next((int)((double)Main.maxTilesX * 0.5), Main.maxTilesX - num785) : WorldGen.genRand.Next(num785, (int)((double)Main.maxTilesX * 0.5))));
+                    num816 = WorldGen.genRand.Next(num785, Main.maxTilesX - num785);
                     num817 = num816 - WorldGen.genRand.Next(200) - 100;
                     num818 = num816 + WorldGen.genRand.Next(200) + 100;
                     if (num817 < GenVars.evilBiomeBeachAvoidance)
@@ -357,13 +358,13 @@ public class EvilGeneration
                                 if (num822 == num816)
                                 {
                                     num821 = 20;
-                                    ChasmRunner(num822, num823, WorldGen.genRand.Next(150) + 150, makeOrb: true);
+                                    WorldGen.ChasmRunner(num822, num823, WorldGen.genRand.Next(150) + 150, makeOrb: true);
                                 }
                                 else if (WorldGen.genRand.Next(35) == 0 && num821 == 0)
                                 {
                                     num821 = 30;
                                     bool makeOrb = true;
-                                    ChasmRunner(num822, num823, WorldGen.genRand.Next(50) + 50, makeOrb);
+                                    WorldGen.ChasmRunner(num822, num823, WorldGen.genRand.Next(50) + 50, makeOrb);
                                 }
 
                                 break;
@@ -409,13 +410,13 @@ public class EvilGeneration
                             {
                                 if (Main.tile[num828, num829].TileType == 0)
                                 {
-                                    grassSpread = 0;
-                                    SpreadGrass(num828, num829, 0, 23);
+                                    WorldGen.grassSpread = 0;
+                                    WorldGen.SpreadGrass(num828, num829, 0, 23);
                                 }
                                 else if (Main.tile[num828, num829].TileType == 59)
                                 {
-                                    grassSpread = 0;
-                                    SpreadGrass(num828, num829, 59, 661);
+                                    WorldGen.grassSpread = 0;
+                                    WorldGen.SpreadGrass(num828, num829, 59, 661);
                                 }
                             }
 
@@ -472,14 +473,19 @@ public class EvilGeneration
                                     {
                                         if (Math.Abs(num836 - num830) + Math.Abs(num837 - num831) < 9 + WorldGen.genRand.Next(11) && WorldGen.genRand.Next(3) != 0 && Main.tile[num836, num837].TileType != 31)
                                         {
-                                            Main.tile[num836, num837].active(active: true);
+                                            var tmp = Main.tile[num836, num837];
+                                            tmp.HasTile = true;
                                             Main.tile[num836, num837].TileType = 25;
                                             if (Math.Abs(num836 - num830) <= 1 && Math.Abs(num837 - num831) <= 1)
-                                                Main.tile[num836, num837].active(active: false);
+                                                tmp = Main.tile[num836, num837];
+                                            tmp.HasTile = false;
                                         }
 
                                         if (Main.tile[num836, num837].TileType != 31 && Math.Abs(num836 - num830) <= 2 + WorldGen.genRand.Next(3) && Math.Abs(num837 - num831) <= 2 + WorldGen.genRand.Next(3))
-                                            Main.tile[num836, num837].active(active: false);
+                                        {
+                                            var tmp = Main.tile[num836, num837];
+                                            tmp.HasTile = false;
+                                        }
                                     }
                                 }
                             }
