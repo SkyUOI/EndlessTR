@@ -10,7 +10,8 @@ namespace EndlessTR.WorldGeneration;
 
 public class EvilGeneration
 {
-    public static void HackAllFunc() { 
+    public static void HackAllFunc()
+    {
         WorldGen.ModifyPass((PassLegacy)WorldGen.VanillaGenPasses["Corruption"], ILGenerateEvil);
     }
 
@@ -328,7 +329,7 @@ public class EvilGeneration
                             ChasmGenerateWaitCounter = 20;
                             WorldGen.ChasmRunner(j, k, WorldGen.genRand.Next(150) + 150, makeOrb: true);
                         }
-                        else if (WorldGen.genRand.Next(35) == 0 && ChasmGenerateWaitCounter == 0)
+                        else if (WorldGen.genRand.NextBool(35) && ChasmGenerateWaitCounter == 0)
                         {
                             ChasmGenerateWaitCounter = 30;
                             bool makeOrb = true;
@@ -443,7 +444,7 @@ public class EvilGeneration
                         {
                             for (int n = TopBorder; n < BottomBorder; n++)
                             {
-                                if (Math.Abs(m - j) + Math.Abs(n - k) < 9 + WorldGen.genRand.Next(11) && WorldGen.genRand.Next(3) != 0 && Main.tile[m, n].TileType != TileID.ShadowOrbs)
+                                if (Math.Abs(m - j) + Math.Abs(n - k) < 9 + WorldGen.genRand.Next(11) && !WorldGen.genRand.NextBool(3) && Main.tile[m, n].TileType != TileID.ShadowOrbs)
                                 {
                                     var tmp = Main.tile[m, n];
                                     tmp.HasTile = true;
