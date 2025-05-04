@@ -427,7 +427,6 @@ public class EvilGeneration
             }
         }
 
-        // 放置暗影珠
         for (int j = EvilLeftBorder; j < EvilRightBorder; j++)
         {
             for (int k = 0; k < Main.maxTilesY - 50; k++)
@@ -450,8 +449,10 @@ public class EvilGeneration
                                     tmp.HasTile = true;
                                     Main.tile[m, n].TileType = TileID.Ebonstone;
                                     if (Math.Abs(m - j) <= 1 && Math.Abs(n - k) <= 1)
+                                    {
                                         tmp = Main.tile[m, n];
-                                    tmp.HasTile = false;
+                                        tmp.HasTile = false;
+                                    }
                                 }
 
                                 if (Main.tile[m, n].TileType != TileID.ShadowOrbs && Math.Abs(m - j) <= 2 + WorldGen.genRand.Next(3) && Math.Abs(n - k) <= 2 + WorldGen.genRand.Next(3))
@@ -466,5 +467,4 @@ public class EvilGeneration
             }
         }
     }
-
 }
