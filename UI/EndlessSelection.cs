@@ -32,7 +32,7 @@ namespace EndlessTR.UI
         private static void ILGetWorldPathFromName(ILContext il)
         {
             var cursor = new ILCursor(il);
-            for(int i = 1; i <= 4; ++i)
+            for (int i = 1; i <= 4; ++i)
             {
                 cursor.GotoNext(MoveType.Before, i => i.MatchLdstr(out var s) && s == ".wld");
                 cursor.Remove();

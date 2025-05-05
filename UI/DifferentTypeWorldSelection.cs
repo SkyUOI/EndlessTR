@@ -1,11 +1,11 @@
-using System.Collections.Generic;
-using System.Reflection.Emit;
-using System.Reflection.Metadata;
 using Humanizer;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using SteelSeries.GameSense;
+using System.Collections.Generic;
+using System.Reflection.Emit;
+using System.Reflection.Metadata;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent.UI.Elements;
