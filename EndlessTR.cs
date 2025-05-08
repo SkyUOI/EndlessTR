@@ -19,7 +19,7 @@ namespace EndlessTR
         {
             base.Load();
             EndlessSelection.Hack();
-            WorldGeneration.Hacker.HackAllFunc();
+            Hacker.HackAllFunc();
             Player.PlayerHacker.Hack();
         }
 

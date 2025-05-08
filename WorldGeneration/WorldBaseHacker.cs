@@ -12,6 +12,7 @@ public class Hacker
     public static void HackAllFunc()
     {
         EvilGeneration.HackAllFunc();
+        OreGeneration.Hack();
         HackInWorld();
         ModifyConsts();
     }
