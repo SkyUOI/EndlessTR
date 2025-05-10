@@ -28,36 +28,59 @@ namespace EndlessTR.WorldData
 
         /// <summary>
         /// 对 Tilemap 的 get_Item 方法进行 IL（中间语言）修改的方法。
-        /// 根据 WorldData.nowGenerating 的值决定返回不同的 Tile 数据。
+        /// 根据 WorldData.nowGenerating 的值以及调用者是否为 WorldGen 类，决定返回不同的 Tile 数据。
         /// </summary>
         /// <param name="il">IL 上下文对象，用于操作中间语言指令。</param>
         private static void ILTileMapGet(ILContext il)
         {
             // 创建一个 ILCursor 实例，用于在 IL 代码中移动和插入指令
             var cursor = new ILCursor(il);
-            cursor.EmitNop();
-            var label_now = cursor.MarkLabel();
-            cursor.GotoPrev(MoveType.Before, i => i.MatchNop());
 
             // 发射一个委托调用指令，执行委托方法并将返回值压入栈中
-            // 该委托检查 WorldData.nowGenerating 是否等于 0
+            // 该委托检查是否由 WorldGen 类调用，如果是，则返回 true，否则返回 false
             cursor.EmitDelegate(() =>
             {
                 if (WorldData.nowGenerating == 0)
                 {
                     return false;
                 }
+                // throw new Exception("Invalid nowGenerating");
+                // 获取调用栈信息，跳过当前方法和调用当前方法的方法
                 var stacktrace = new StackTrace(2, false);
-                return stacktrace.GetFrame(0).GetType() == typeof(WorldGen);
+                // 检查调用者的方法所属的类型是否为 WorldGen 类
+                return stacktrace.GetFrame(0).GetMethod().DeclaringType == typeof(WorldGen);
             });
-            cursor.EmitBrfalse(label_now);
 
+            // 保存当前光标下一条指令的引用，后续用于跳转回来
+            var tmp = cursor.Next;
+
+            // 将光标移动到原有代码之后
+            cursor.Goto(cursor.Instrs.Count - 1, MoveType.After);
+
+            // 插入一个空操作指令（NOP），用于标记位置
+            cursor.EmitNop();
+
+            // 将光标移动到上一个 NOP 指令之前
+            cursor.GotoPrev(MoveType.Before, i => i.MatchNop());
+
+            // 标记当前位置，创建一个标签，指示WorldGen相关代码的起始位置
+            var label_now = cursor.MarkLabel();
+
+            // 将光标移动到else分支里面，原有代码的前面
+            cursor.Goto(tmp, MoveType.Before);
+
+            // 如果是WorldGen的调用，则跳转到WorldGen相关的代码
+            cursor.EmitBrtrue(label_now);
+
+            // 移动到原有代码的后面，即新的WorldGen逻辑开头
+            cursor.Goto(cursor.Instrs.Count - 1, MoveType.After);
+
+            // 接下来是WorldGen相关的新逻辑
             // 加载方法的 x 坐标到栈上
             cursor.EmitLdarg1();
             // 加载方法的 y 坐标到栈上
             cursor.EmitLdarg2();
 
-            // 发射一个委托调用指令，执行委托方法并将返回值压入栈中
             // 该委托根据 WorldData.nowGenerating、x 和 y 坐标从 WorldData.MapData 中获取 Tile 数据
             cursor.EmitDelegate((int x, int y) =>
             {
