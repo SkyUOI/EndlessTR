@@ -20,9 +20,11 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+    - uses: chi-rei-den/ModLoaderTools@v1
+      with:
+        command: setup 
     - name: Restore dependencies
       run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+    - uses: chi-rei-den/ModLoaderTools@v1
+      with:
+        command: build
