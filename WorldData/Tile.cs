@@ -26,6 +26,20 @@ namespace EndlessTR.WorldData
             MonoModHooks.Modify(method, ILTileMapGet);
         }
 
+        private static bool CheckIsCalledByworldGen()
+        {
+            if (WorldData.nowGenerating == 0)
+            {
+                return false;
+            }
+            // throw new Exception("Invalid nowGenerating");
+            // 获取调用栈信息，跳过当前方法和调用当前方法的方法
+            var stacktrace = new StackTrace(2, false);
+            // 检查调用者的方法所属的类型是否为 WorldGen 类
+            return stacktrace.GetFrame(0).GetMethod().DeclaringType == typeof(WorldGen);
+
+        }
+
         /// <summary>
         /// 对 Tilemap 的 get_Item 方法进行 IL（中间语言）修改的方法。
         /// 根据 WorldData.nowGenerating 的值以及调用者是否为 WorldGen 类，决定返回不同的 Tile 数据。
@@ -36,20 +50,9 @@ namespace EndlessTR.WorldData
             // 创建一个 ILCursor 实例，用于在 IL 代码中移动和插入指令
             var cursor = new ILCursor(il);
 
-            // 发射一个委托调用指令，执行委托方法并将返回值压入栈中
-            // 该委托检查是否由 WorldGen 类调用，如果是，则返回 true，否则返回 false
-            cursor.EmitDelegate(() =>
-            {
-                if (WorldData.nowGenerating == 0)
-                {
-                    return false;
-                }
-                // throw new Exception("Invalid nowGenerating");
-                // 获取调用栈信息，跳过当前方法和调用当前方法的方法
-                var stacktrace = new StackTrace(2, false);
-                // 检查调用者的方法所属的类型是否为 WorldGen 类
-                return stacktrace.GetFrame(0).GetMethod().DeclaringType == typeof(WorldGen);
-            });
+            // 检查是否由 WorldGen 类调用，如果是，则返回 true，否则返回 false
+            var flag = BindingFlags.NonPublic | BindingFlags.Static;
+            cursor.EmitCall(typeof(TileHack).GetMethod("CheckIsCalledByworldGen", flag));
 
             // 保存当前光标下一条指令的引用，后续用于跳转回来
             var tmp = cursor.Next;
