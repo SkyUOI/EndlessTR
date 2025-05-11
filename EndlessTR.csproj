@@ -5,7 +5,8 @@
 
 	<!-- General -->
 	<PropertyGroup>
-		
+  		<TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+  		<TargetFrameworkVersion>v8.0</TargetFrameworkVersion>
 	</PropertyGroup>
 
 	<!-- References -->
