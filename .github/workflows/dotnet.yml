@@ -5,7 +5,7 @@ name: .NET
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "ci_fix"]
   pull_request:
     branches: [ "main" ]
 
@@ -23,19 +23,20 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Setup tModLoader
-      run:
+      run: |
         cd ..
         mkdir tModLoader
         cd tModLoader
         wget https://github.com/tModLoader/tModLoader/releases/download/v2025.03.3.1/tModLoader.zip
         unzip tModLoader.zip
     - name: Setup tml env
-      run:
+      run: |
         cd ..
-        echo "<Project ToolsVersion=\"14.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
-          <Import Project=\"$(pwd)\tMLMod.targets" />
-        </Project>" > tModLoader.targets
+        cat <<EOF > tModLoader.targets
+        <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+          <Import Project="$(pwd)/tModLoader/tMLMod.targets" />
+        </Project>
+        EOF
     - name: Build
       run:
         dotnet build --no-restore
-
