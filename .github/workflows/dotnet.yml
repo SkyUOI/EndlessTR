@@ -20,11 +20,22 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    - uses: chi-rei-den/ModLoaderTools@v1
-      with:
-        command: setup 
     - name: Restore dependencies
       run: dotnet restore
-    - uses: chi-rei-den/ModLoaderTools@v1
-      with:
-        command: build
+    - name: Setup tModLoader
+      run:
+        cd ..
+        mkdir tModLoader
+        cd tModLoader
+        wget https://github.com/tModLoader/tModLoader/releases/download/v2025.03.3.1/tModLoader.zip
+        unzip tModLoader.zip
+    - name: Setup tml env
+      run:
+        cd ..
+        echo "<Project ToolsVersion=\"14.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">
+          <Import Project=\"$(pwd)\tMLMod.targets" />
+        </Project>" > tModLoader.targets
+    - name: Build
+      run:
+        dotnet build --no-restore
+
