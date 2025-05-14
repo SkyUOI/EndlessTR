@@ -27,6 +27,6 @@ public class PlayerHacker
     private static void BordersMovementIL(ILContext il)
     {
         var cursor = new ILCursor(il);
-        cursor.RemoveRange(54);
+        cursor.EmitRet();
     }
 }
