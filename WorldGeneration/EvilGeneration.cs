@@ -31,10 +31,20 @@ public class EvilGeneration
 
     private static void ILGenerateAltars(ILContext il)
     {
-        var cursor = new ILCursor(il); cursor.EmitLdarg0();
-        cursor.EmitLdarg1();
-        cursor.EmitDelegate(GenerateAltar);
-        cursor.EmitRet();
+        var cursor = new ILCursor(il);
+        ILLabel label = null;
+        cursor.GotoNext(MoveType.After, i => i.MatchLdsfld(typeof(GenVars), "crimsonLeft"), i => i.MatchBrtrue(out label));
+        if (label == null)
+        {
+            throw new Exception("Cannot find any IL related to placing Altars.");
+        }
+        cursor.GotoLabel(label, MoveType.Before);
+        cursor.EmitDelegate(() =>
+        {
+            return WorldGen.genRand.Next(0, 1);
+        });
+        var style2_id = 5;
+        cursor.EmitStloc(style2_id);
     }
 
     private static void ILTileClean(ILContext il)
@@ -498,52 +508,6 @@ public class EvilGeneration
                         }
                     }
                 }
-            }
-        }
-    }
-
-    /// <summary>
-    /// 该函数的主要更改在于，使得每个放置的野生祭坛都随机为腐化或猩红
-    /// </summary>
-    /// <param name="progress"></param>
-    /// <param name="passConfig"></param>
-    private static void GenerateAltar(GenerationProgress progress, GameConfiguration passConfig)
-    {
-        Main.tileSolid[484] = false;
-        progress.Message = Lang.gen[26].Value;
-        int AltarNums = (int)((double)(Main.maxTilesX * Main.maxTilesY) * 3.3E-06);
-
-        for (int i = 0; i < AltarNums; i++)
-        {
-            progress.Set((double)i / (double)AltarNums);
-            for (int j = 0; j < 10000; j++)
-            {
-                int num663 = WorldGen.genRand.Next(281, Main.maxTilesX - 3 - 280);
-                while ((double)num663 > (double)Main.maxTilesX * 0.45 && (double)num663 < (double)Main.maxTilesX * 0.55)
-                {
-                    num663 = WorldGen.genRand.Next(281, Main.maxTilesX - 3 - 280);
-                }
-
-                int num664 = WorldGen.genRand.Next((int)(Main.worldSurface * 2.0 + Main.rockLayer) / 3, (int)(Main.rockLayer + (double)((Main.maxTilesY - 350) * 2)) / 3);
-
-                while (WorldGen.oceanDepths(num663, num664) || Vector2D.Distance(new Vector2D(num663, num664), GenVars.shimmerPosition) < (double)WorldGen.shimmerSafetyDistance)
-                {
-                    num663 = WorldGen.genRand.Next(281, Main.maxTilesX - 3 - 280);
-                    while ((double)num663 > (double)Main.maxTilesX * 0.45 && (double)num663 < (double)Main.maxTilesX * 0.55)
-                    {
-                        num663 = WorldGen.genRand.Next(281, Main.maxTilesX - 3 - 280);
-                    }
-
-                    num664 = WorldGen.genRand.Next((int)(Main.worldSurface * 2.0 + Main.rockLayer) / 3, (int)(Main.rockLayer + (double)((Main.maxTilesY - 350) * 2)) / 3);
-                }
-
-                int style2 = WorldGen.genRand.Next(0, 1);
-
-                if (!WorldGen.IsTileNearby(num663, num664, TileID.DemonAltar, 3))
-                    WorldGen.Place3x2(num663, num664, TileID.DemonAltar, style2);
-
-                if (Main.tile[num663, num664].TileType == TileID.DemonAltar)
-                    break;
             }
         }
     }
