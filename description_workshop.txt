@@ -1,1 +1,3 @@
-This description will show up on the steam page, check out https://steamcommunity.com/comment/Guide/formattinghelp.
+Break the border of the map! Explore in an endless terraria world!
+
+The mod is in a unstable state and maybe conflict with many popular mods (Because we hack many functions to implement an endless world). We will try to optimize it as soon as possible.

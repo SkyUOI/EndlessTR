@@ -328,6 +328,9 @@ namespace EndlessTR.UI
             // large world size
             Main.maxTilesX = 8400;
             Main.maxTilesY = 2400;
+            // debug use
+            // Main.maxTilesX = 4200;
+            // Main.maxTilesY = 1200;
 
             WorldGen.setWorldSize();
             switch (_optionDifficulty)
