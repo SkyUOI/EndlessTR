@@ -23,10 +23,7 @@ namespace EndlessTR.WorldData;
 public static class Debug
 {
 	public static void Error(string s) { throw new Exception(s); }
-	public static Func<T, T> Check<T>(Action<T> f)
-	{
-		return t => { f(t); return t; };
-	}
+	public static Func<T, T> Check<T>(Action<T> f) { return t => { f(t); return t; }; }
 
 	public static void Hack(Type t, string methodName, BindingFlags flag, Action<ILCursor> ilFunc)
 	{
@@ -113,7 +110,8 @@ public class WorldData
 
 	public static void ILWriteArchive(ILContext il)
 	{
-		var cursor = new ILCursor(il);
+		var cursor = new ILCursor(il);		
+		// cursor.EmitDelegate(() => Debug.Error("WriteArchive"));
 		cursor.EmitLdarg0();
 		cursor.EmitLdarg1();
 		cursor.EmitLdarg2();
@@ -123,13 +121,24 @@ public class WorldData
 	public static void BackupWlds(Ionic.Zip.ZipFile zip, bool isCloudSave, string path)
 	{
 		// throw new Exception("backupWlds");
-		var AddZipEntry = Type.GetType("Terraria.ModLoader.BackupIO")
-			.GetMethod("AddZipEntry", BindingFlags.Static | BindingFlags.NonPublic);
+		Assembly terraria = Assembly.Load("tModLoader");
+		var BackupIO = terraria.GetType("Terraria.ModLoader.BackupIO");
+		if (BackupIO == null)
+		{
+			Debug.Error("BackupWlds: BackupIO == null");
+		}
+		
+		var AddZipEntry = BackupIO.GetMethod("AddZipEntry", BindingFlags.Static | BindingFlags.NonPublic);
+		if (AddZipEntry == null)
+		{
+			Debug.Error("BackupWlds: AddZipEntry == null");
+		}
 		for (int i = 0; i < blockNum; ++i)
 		{
-			if (FileUtilities.Exists(path, isCloudSave)) AddZipEntry
-				.Invoke(null, [zip, isCloudSave, GetWldPath(i)]);
+			if (FileUtilities.Exists(path, isCloudSave))
+				AddZipEntry.Invoke(null, [zip, GetWldPath(i), isCloudSave]);
 		}
+
 	}
 
 	public static void HackLoadWorld()
@@ -425,6 +434,19 @@ public class WorldData
 				 i.Next.Next.MatchLdarg0());
 		cursor.EmitLdarg0();
 		cursor.EmitDelegate(SaveWorldWlds);
+
+		// 备份世界文件前需要验证文件, 先把他去掉
+		// TODO: 修改验证文件的函数valiateWorld
+
+		var ValidateWorld = typeof(WorldFile).GetMethod("ValidateWorld", BindingFlags.Static | BindingFlags.Public);
+		if (ValidateWorld == null)
+		{
+			Debug.Error("ILInternalSaveWorld: ValidateWorld == null");
+		}
+		cursor.GotoNext(MoveType.Before, i => i.MatchLdloc(8) && i.Next.MatchCall(ValidateWorld));
+		cursor.RemoveRange(2);
+		cursor.EmitLdcI4(1);
+
 	}
 
 	public static void SaveWorldWld(BinaryWriter writer)
@@ -477,6 +499,11 @@ public class WorldData
 		return Main.worldPathName[..^5] + "\\" + Main.worldName + i.ToString() + ".wld";
 	}
 
+	public static string GetWldBakPath(int i)
+	{
+		return GetWldPath(i)[..^3] + "bak";
+	}
+
 	public static void SaveWorldWlds(bool useCloudSaving)
 	{
 		int num;
@@ -487,13 +514,13 @@ public class WorldData
 			{
 				using (BinaryWriter writer = new BinaryWriter(memoryStream))
 				{
-					//ValidateWorld存在问题
 					SaveWorldWld(writer);
 				}
 				array = memoryStream.ToArray();
 				num = array.Length;
 			}
 			FileUtilities.Write(GetWldPath(i), array, num, useCloudSaving);
+			FileUtilities.Write(GetWldBakPath(i), array, num, useCloudSaving);
 		}
 	}
 
