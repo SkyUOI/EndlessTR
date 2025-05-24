@@ -17,6 +17,7 @@ using System.Reflection.Emit;
 using Microsoft.Build.Tasks;
 using rail;
 using System.Xml.Linq;
+using ReLogic.OS;
 
 namespace EndlessTR.WorldData;
 
@@ -97,6 +98,49 @@ public class WorldData
 
 		HackWriteArchive();
 
+		HackEraseWorld();
+	}
+
+	public static void HackEraseWorld()
+	{
+		try
+		{
+			var EraseWorld = typeof(Main).GetMethod("EraseWorld",
+				BindingFlags.Static | BindingFlags.NonPublic);
+			if (EraseWorld == null)
+			{
+				Debug.Error("HackEraseWorld EraseWorld == null");
+			}
+			MonoModHooks.Modify(EraseWorld, il => {
+				var cursor = new ILCursor(il);
+				cursor.GotoNext(MoveType.Before, i => i.MatchBrtrue(out var _)
+				&& i.Next.MatchCall(out var func)
+				&& func.Name == "Get");
+				cursor.Index += 1;
+				cursor.EmitLdarg0();
+				cursor.EmitDelegate(EraseWlds);
+			});
+		}
+		catch
+		{
+			Debug.Error("HackEraseWorld Error");
+		}
+
+
+	}
+
+	public static void EraseWlds(int i)
+	{
+		try
+		{
+			Platform.Get<IPathService>().MoveToRecycleBin(Path.GetDirectoryName(
+				Main.WorldList[i].Path[..^5] + "\\"));
+		}
+		catch
+		{
+			Debug.Error("EraseWlds Error");
+		}
+		
 	}
 
 	public static void HackWriteArchive()
@@ -110,7 +154,7 @@ public class WorldData
 
 	public static void ILWriteArchive(ILContext il)
 	{
-		var cursor = new ILCursor(il);		
+		var cursor = new ILCursor(il);
 		// cursor.EmitDelegate(() => Debug.Error("WriteArchive"));
 		cursor.EmitLdarg0();
 		cursor.EmitLdarg1();
@@ -127,7 +171,7 @@ public class WorldData
 		{
 			Debug.Error("BackupWlds: BackupIO == null");
 		}
-		
+
 		var AddZipEntry = BackupIO.GetMethod("AddZipEntry", BindingFlags.Static | BindingFlags.NonPublic);
 		if (AddZipEntry == null)
 		{
@@ -501,7 +545,7 @@ public class WorldData
 
 	public static string GetWldBakPath(int i)
 	{
-		return GetWldPath(i)[..^3] + "bak";
+		return Path.ChangeExtension(GetWldPath(i), "bak");
 	}
 
 	public static void SaveWorldWlds(bool useCloudSaving)
