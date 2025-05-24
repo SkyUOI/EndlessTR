@@ -326,8 +326,8 @@ namespace EndlessTR.UI
                 _WorldSeed = "";
             }
             // large world size
-            Main.maxTilesX = 8400;
-            Main.maxTilesY = 2400;
+            Main.maxTilesX = 4200;
+            Main.maxTilesY = 1200;
 
             WorldGen.setWorldSize();
             switch (_optionDifficulty)
@@ -353,6 +353,7 @@ namespace EndlessTR.UI
                 Main.ActiveWorldFileData.SetSeed(_WorldSeed);
 
             Main.menuMode = 10;
+            WorldData.WorldData.initiate();
             WorldGen.CreateNewWorld();
         }
     }
