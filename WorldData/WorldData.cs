@@ -70,24 +70,29 @@ public class ExtendingMap
 			throw new InvalidOperationException("tModLoader does that so I do it too");
 		}
 	}
+
 }
 
 public class WorldData
 {
 	public static int nowBlock = 0;
-
 	public static int nowGenerating = 0;
+
+	public static int nowSaving = 0;
+	public static int nowLoading = 0;
 
 	public static ExtendingMap MapData = new ExtendingMap();
 
-	public static int blockNum;
+	public static int blockLeft;
+
+	public static int blockRight;
 
 	public static int versionNumber;
 
 	WorldData() { }
 	public static void initiate() // 在世界生成时进行一些内容的初始化
 	{
-		blockNum = 1;
+		blockLeft = blockRight = 0;
 		nowBlock = 0;
 	}
 
@@ -99,6 +104,59 @@ public class WorldData
 		HackWriteArchive();
 
 		HackEraseWorld();
+
+		HackUpdate();
+	}
+
+	public static void HackUpdate()
+	{
+		// TODO: Hack Pleyer 中的 Update (位于Player.cs 20098行)
+		// 检查两边的块, 若没有生成, 则生成, 若有, 则加载
+		var Player = typeof(Mod).Assembly.GetType("Terraria.Player");
+		if (Player == null)
+		{
+			Debug.Error("Player == null");
+		}
+		var Update = Player.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance);
+		if (Update == null)
+		{
+			Debug.Error("Update == null");
+		}
+		MonoModHooks.Modify(Update, il =>
+		{
+			ILCursor cursor = new ILCursor(il);
+			cursor.EmitDelegate(LoadBlocks);
+		});
+	}
+
+	/// <summary>
+	/// 加载某一个块中的内容, 若未生成则会生成该块
+	/// </summary>
+	/// <param name="blockId"> 加载的块的编号 </param>
+	/// <param name="tileMapId"> 对应extendingMap中的编号 </param>
+	public static void LoadBlock(int blockId, int extendingMapId)
+	{
+		nowGenerating = extendingMapId;
+		nowLoading = extendingMapId;
+		// 检查是否存在该block的文件, 若没有则生成
+		if (!CheckBlockFile(blockId))
+		{
+			WorldGen.GenerateWorld(Main.ActiveWorldFileData.Seed);
+		}
+
+		// 实际的加载代码
+		LoadWorldWld(blockId, extendingMapId);
+	}
+
+	private static bool CheckBlockFile(int blockId) // 检查
+	{
+		return FileUtilities.Exists(GetPath.GetWldPath(blockId), false);
+	}
+
+	public static void LoadBlocks()
+	{
+		LoadBlock(nowBlock - 1, -1);
+		LoadBlock(nowBlock + 1, 1);
 	}
 
 	public static void HackEraseWorld()
@@ -111,7 +169,8 @@ public class WorldData
 			{
 				Debug.Error("HackEraseWorld EraseWorld == null");
 			}
-			MonoModHooks.Modify(EraseWorld, il => {
+			MonoModHooks.Modify(EraseWorld, il =>
+			{
 				var cursor = new ILCursor(il);
 				cursor.GotoNext(MoveType.Before, i => i.MatchBrtrue(out var _)
 				&& i.Next.MatchCall(out var func)
@@ -140,7 +199,7 @@ public class WorldData
 		{
 			Debug.Error("EraseWlds Error");
 		}
-		
+
 	}
 
 	public static void HackWriteArchive()
@@ -177,10 +236,10 @@ public class WorldData
 		{
 			Debug.Error("BackupWlds: AddZipEntry == null");
 		}
-		for (int i = 0; i < blockNum; ++i)
+		for (int i = blockLeft; i <= blockRight; ++i)
 		{
 			if (FileUtilities.Exists(path, isCloudSave))
-				AddZipEntry.Invoke(null, [zip, GetWldPath(i), isCloudSave]);
+				AddZipEntry.Invoke(null, [zip, GetPath.GetWldPath(i), isCloudSave]);
 		}
 
 	}
@@ -338,20 +397,6 @@ public class WorldData
 		cursor.EmitLdarg0();
 		cursor.EmitDelegate<Action<BinaryReader>>(i => LoadEndlessTR(i));
 
-		// {
-		// 	Action<string> Error = s => { throw new Exception(s); };
-		// 	// 检查返回值
-		// 	var LoadFooter = typeof(WorldFile).GetMethod("LoadFooter",
-		// 		BindingFlags.Static | BindingFlags.Public
-		// 	);
-		// 	cursor.GotoNext(MoveType.Before, i => i.MatchCall(LoadFooter));
-		// 	cursor.Index += 1;
-		// 	cursor.EmitDelegate<Func<int, int>>(i =>
-		// 	{
-		// 		Error("i:::" + i.ToString());
-		// 		return i;
-		// 	});
-		// }
 	}
 
 
@@ -375,44 +420,45 @@ public class WorldData
 		);
 
 		cursor.GotoNext(MoveType.Before, i => i.MatchCall(OnWorldLoad));
-		cursor.EmitLdarg0();
-		cursor.EmitDelegate(LoadWorldWlds);
+		cursor.EmitDelegate(() =>
+		{
+			LoadWorldWld(nowBlock, 0);
+		});
 	}
 
-	public static void LoadWorldWlds(bool loadFromCloud)
+	public static void LoadWorldWld(int blockId, int extendingMapId)
 	{
-		bool flag = loadFromCloud && Terraria.Social.SocialAPI.Cloud != null;
+		nowLoading = extendingMapId;
 		try
 		{
-			for (int i = 0; i < blockNum; ++i)
-			{
-				/* TODO: 
-					处理地牢坐标, 以及其他可能原本在header中但无限世界后需要多个的数据
-				*/
-				using MemoryStream memoryStream = new MemoryStream(FileUtilities.ReadAllBytes(GetWldPath(i), flag));
-				using BinaryReader binaryReader = new BinaryReader(memoryStream);
-				bool[] importance;
-				if (!LoadImportance(binaryReader, out importance))
-				{
-					Debug.Error("LoadImportance Error");
-				}
-				try
-				{
-					WorldFile.LoadWorldTiles(binaryReader, importance);
-				}
-				catch
-				{
-					Debug.Error("LoadWorldTiles Error");
-				}
 
-				WorldFile.LoadChests(binaryReader);
-				WorldFile.LoadSigns(binaryReader);
-				WorldFile.LoadNPCs(binaryReader);
-				WorldFile.LoadTileEntities(binaryReader);
-				WorldFile.LoadWeightedPressurePlates(binaryReader);
-				WorldFile.LoadTownManager(binaryReader);
-				WorldFile.LoadBestiary(binaryReader, versionNumber);
+			/* TODO: 
+				处理地牢坐标, 以及其他可能原本在header中但无限世界后需要多个的数据
+			*/
+			using MemoryStream memoryStream = new MemoryStream(FileUtilities.ReadAllBytes(GetPath.GetWldPath(blockId), false));
+			using BinaryReader binaryReader = new BinaryReader(memoryStream);
+			bool[] importance;
+			if (!LoadImportance(binaryReader, out importance))
+			{
+				Debug.Error("LoadImportance Error");
 			}
+			try
+			{
+				WorldFile.LoadWorldTiles(binaryReader, importance);
+			}
+			catch
+			{
+				Debug.Error("LoadWorldTiles Error");
+			}
+
+			WorldFile.LoadChests(binaryReader);
+			WorldFile.LoadSigns(binaryReader);
+			WorldFile.LoadNPCs(binaryReader);
+			WorldFile.LoadTileEntities(binaryReader);
+			WorldFile.LoadWeightedPressurePlates(binaryReader);
+			WorldFile.LoadTownManager(binaryReader);
+			WorldFile.LoadBestiary(binaryReader, versionNumber);
+
 		}
 		catch
 		{
@@ -477,7 +523,10 @@ public class WorldData
 		cursor.GotoNext(MoveType.Before, i => i.MatchLdloc1() && i.Next.MatchLdloc0() &&
 				 i.Next.Next.MatchLdarg0());
 		cursor.EmitLdarg0();
-		cursor.EmitDelegate(SaveWorldWlds);
+		cursor.EmitDelegate(() =>
+		{
+			SaveWorldWld(nowBlock, 0);
+		});
 
 		// 备份世界文件前需要验证文件, 先把他去掉
 		// TODO: 修改验证文件的函数valiateWorld
@@ -538,46 +587,42 @@ public class WorldData
 		return (int)writer.BaseStream.Position;
 	}
 
-	public static string GetWldPath(int i)
-	{
-		return Main.worldPathName[..^5] + "\\" + Main.worldName + i.ToString() + ".wld";
-	}
 
-	public static string GetWldBakPath(int i)
-	{
-		return Path.ChangeExtension(GetWldPath(i), "bak");
-	}
 
-	public static void SaveWorldWlds(bool useCloudSaving)
+	
+
+	public static void SaveWorldWld(int blockId, int extendingMapId)
 	{
+		nowSaving = extendingMapId;
 		int num;
 		byte[] array;
-		for (int i = 0; i < blockNum; ++i)
+
+		using (MemoryStream memoryStream = new MemoryStream(7000000))
 		{
-			using (MemoryStream memoryStream = new MemoryStream(7000000))
+			using (BinaryWriter writer = new BinaryWriter(memoryStream))
 			{
-				using (BinaryWriter writer = new BinaryWriter(memoryStream))
-				{
-					SaveWorldWld(writer);
-				}
-				array = memoryStream.ToArray();
-				num = array.Length;
+				SaveWorldWld(writer);
 			}
-			FileUtilities.Write(GetWldPath(i), array, num, useCloudSaving);
-			FileUtilities.Write(GetWldBakPath(i), array, num, useCloudSaving);
+			array = memoryStream.ToArray();
+			num = array.Length;
 		}
+		FileUtilities.Write(GetPath.GetWldPath(blockId), array, num, false);
+		FileUtilities.Write(GetPath.GetWldBakPath(blockId), array, num, false);
+
 	}
 
 	public static int SaveEndlessTR(BinaryWriter writer) // 保存有关此模组的内容
 	{
-		writer.Write(WorldData.blockNum);
+		writer.Write(WorldData.blockLeft);
+		writer.Write(WorldData.blockRight);
 		writer.Write(WorldData.nowBlock);
 		return (int)writer.BaseStream.Position;
 	}
 
 	public static void LoadEndlessTR(BinaryReader reader)
 	{
-		WorldData.blockNum = reader.ReadInt32();
+		WorldData.blockLeft = reader.ReadInt32();
+		WorldData.blockRight = reader.ReadInt32();
 		WorldData.nowBlock = reader.ReadInt32();
 	}
 
@@ -594,5 +639,21 @@ public class WorldData
 		WorldFile.SaveHeaderPointers(writer, pointers);
 	}
 
+	public class GetPath
+	{
+		public static string GetDirPath()
+		{
+			return Main.worldPathName[..^5];
+		}
 
+		public static string GetWldPath(int i)
+		{
+			return GetDirPath() + "\\" + Main.worldName + i.ToString() + ".wld";
+		}
+
+		public static string GetWldBakPath(int i)
+	{
+		return Path.ChangeExtension(GetWldPath(i), "bak");
+	}
+	}
 }
