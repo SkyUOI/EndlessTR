@@ -37,7 +37,6 @@ namespace EndlessTR.WorldData
             var stacktrace = new StackTrace(2, false);
             // 检查调用者的方法所属的类型是否为 WorldGen 类
             return stacktrace.GetFrame(0).GetMethod().DeclaringType == typeof(WorldGen);
-
         }
 
         /// <summary>

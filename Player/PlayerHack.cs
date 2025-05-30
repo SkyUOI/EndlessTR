@@ -27,6 +27,9 @@ public class PlayerHacker
     private static void BordersMovementIL(ILContext il)
     {
         var cursor = new ILCursor(il);
-        cursor.EmitRet();
+        cursor.GotoNext(MoveType.Before, i => i.MatchLdarg0(), i => i.MatchLdflda(out var t) && t.Name == "position", i => i.MatchLdfld(out var t) && t.Name == "Y");
+        var label = cursor.MarkLabel();
+        cursor.Index = 0;
+        cursor.EmitBr(label);
     }
 }

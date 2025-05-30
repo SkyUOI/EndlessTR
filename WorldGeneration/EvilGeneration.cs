@@ -7,7 +7,6 @@ using Terraria.GameContent.Generation;
 using Terraria.ID;
 using Terraria.IO;
 using Terraria.WorldBuilding;
-using static tModPorter.ProgressUpdate;
 
 namespace EndlessTR.WorldGeneration;
 
@@ -17,7 +16,7 @@ public class EvilGeneration
     {
         WorldGen.ModifyPass((PassLegacy)WorldGen.VanillaGenPasses["Corruption"], ILGenerateEvil);
         WorldGen.ModifyPass((PassLegacy)WorldGen.VanillaGenPasses["Altars"], ILGenerateAltars);
-        WorldGen.ModifyPass((PassLegacy)WorldGen.VanillaGenPasses["Tile Cleanup"], ILTileClean);
+        WorldGen.DetourPass((PassLegacy)WorldGen.VanillaGenPasses["Tile Cleanup"], OnTileClean);
     }
 
     private static void ILGenerateEvil(ILContext il)
@@ -47,21 +46,12 @@ public class EvilGeneration
         cursor.EmitStloc(style2_id);
     }
 
-    private static void ILTileClean(ILContext il)
+    private static void OnTileClean(WorldGen.orig_GenPassDetour orig, object self, GenerationProgress progress, GameConfiguration configuration)
     {
-        var cursor = new ILCursor(il);
-        //throw new Exception(cursor.Method.FullName);
-        cursor.EmitDelegate(() =>
-        {
-            WorldGen.drunkWorldGen = true;
-        });
-        cursor.Index = cursor.Instrs.Count - 1;
-        cursor.EmitDelegate(() =>
-        {
-            WorldGen.drunkWorldGen = false;
-        });
+        WorldGen.drunkWorldGen = true;
+        orig(self, progress, configuration);
+        WorldGen.drunkWorldGen = false;
     }
-
 
     /// <summary>
     /// 该函数的主要更改在于每一片邪恶地形都是随机生成的，并删除了特殊种子，同时进行了一定的重构和拆分
