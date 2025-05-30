@@ -23,53 +23,53 @@ namespace EndlessTR.WorldData;
 
 public static class Debug
 {
-    public static void Error(string s) { throw new Exception(s); }
-    public static Func<T, T> Check<T>(Action<T> f) { return t => { f(t); return t; }; }
+	public static void Error(string s) { throw new Exception(s); }
+	public static Func<T, T> Check<T>(Action<T> f) { return t => { f(t); return t; }; }
 
-    public static void Hack(Type t, string methodName, BindingFlags flag, Action<ILCursor> ilFunc)
-    {
-        MonoModHooks.Modify(t.GetMethod(methodName, flag), il =>
-        {
-            ILCursor cursor = new ILCursor(il);
-            ilFunc(cursor);
-        });
-    }
+	public static void Hack(Type t, string methodName, BindingFlags flag, Action<ILCursor> ilFunc)
+	{
+		MonoModHooks.Modify(t.GetMethod(methodName, flag), il =>
+		{
+			ILCursor cursor = new ILCursor(il);
+			ilFunc(cursor);
+		});
+	}
 }
 
 public class ExtendingMap
 {
-    private static Tile[][,] newTileBlocksLeft = { new Tile[Main.maxTilesX, Main.maxTilesY] };
-    private static Tile[][,] newTileBlocksRight = { new Tile[Main.maxTilesX, Main.maxTilesY] };
+	private static Tile[][,] newTileBlocksLeft = { new Tile[Main.maxTilesX, Main.maxTilesY] };
+	private static Tile[][,] newTileBlocksRight = { new Tile[Main.maxTilesX, Main.maxTilesY] };
 
-    private Tile[,] selectTilemap(int block_id)
-    {
-        if (block_id < 0)
-        {
-            return newTileBlocksLeft[-block_id];
-        }
-        else if (block_id > 0)
-        {
-            return newTileBlocksRight[block_id];
-        }
-        else
-        {
-            throw new Exception("Invalid block_id");
-        }
-    }
+	private Tile[,] selectTilemap(int block_id)
+	{
+		if (block_id < 0)
+		{
+			return newTileBlocksLeft[-block_id];
+		}
+		else if (block_id > 0)
+		{
+			return newTileBlocksRight[block_id];
+		}
+		else
+		{
+			throw new Exception("Invalid block_id");
+		}
+	}
 
-    public Tile this[int block_id, int x, int y]
-    {
-        get
-        {
-            if (block_id == 0) return Main.tile[x, y];
-            var map = selectTilemap(block_id);
-            return map[x, y];
-        }
-        set
-        {
-            throw new InvalidOperationException("tModLoader does that so I do it too");
-        }
-    }
+	public Tile this[int block_id, int x, int y]
+	{
+		get
+		{
+			if (block_id == 0) return Main.tile[x, y];
+			var map = selectTilemap(block_id);
+			return map[x, y];
+		}
+		set
+		{
+			throw new InvalidOperationException("tModLoader does that so I do it too");
+		}
+	}
 }
 
 public class WorldData
@@ -80,13 +80,13 @@ public class WorldData
 	public static int nowSaving = 0;
 	public static int nowLoading = 0;
 
-    public static ExtendingMap MapData = new ExtendingMap();
+	public static ExtendingMap MapData = new ExtendingMap();
 
 	public static int blockLeft;
 
 	public static int blockRight;
 
-    public static int versionNumber;
+	public static int versionNumber;
 
 	WorldData() { }
 	public static void initiate() // 在世界生成时进行一些内容的初始化
@@ -394,7 +394,7 @@ public class WorldData
 		cursor.GotoNext(MoveType.Before, i => i.MatchCall(LastMinuteFixes));
 		cursor.MarkLabel(lLoadEndlessTR);
 		cursor.EmitLdarg0();
-		cursor.EmitDelegate<Action<BinaryReader>>(i => LoadEndlessTR(i));
+		cursor.EmitDelegate<Action<BinaryReader>>(i => Ewld.LoadEndlessTR(i));
 
 	}
 
@@ -517,7 +517,7 @@ public class WorldData
 		);
 		cursor.GotoNext(MoveType.Before, i => i.MatchCall(version2));
 		cursor.Remove();
-		cursor.EmitDelegate(SaveWorldEWld);
+		cursor.EmitDelegate(Ewld.SaveWorldEWld);
 		// 在文件夹内保存.wld文件
 		cursor.GotoNext(MoveType.Before, i => i.MatchLdloc1() && i.Next.MatchLdloc0() &&
 				 i.Next.Next.MatchLdarg0());
@@ -588,7 +588,7 @@ public class WorldData
 
 
 
-	
+
 
 	public static void SaveWorldWld(int blockId, int extendingMapId)
 	{
@@ -610,49 +610,22 @@ public class WorldData
 
 	}
 
-	public static int SaveEndlessTR(BinaryWriter writer) // 保存有关此模组的内容
-	{
-		writer.Write(WorldData.blockLeft);
-		writer.Write(WorldData.blockRight);
-		writer.Write(WorldData.nowBlock);
-		return (int)writer.BaseStream.Position;
-	}
-
-	public static void LoadEndlessTR(BinaryReader reader)
-	{
-		WorldData.blockLeft = reader.ReadInt32();
-		WorldData.blockRight = reader.ReadInt32();
-		WorldData.nowBlock = reader.ReadInt32();
-	}
-
-	public static void SaveWorldEWld(BinaryWriter writer)
-	{
-		int[] pointers = [
-			WorldFile.SaveFileFormatHeader(writer),
-			WorldFile.SaveWorldHeader(writer),
-			WorldFile.SaveCreativePowers(writer),
-			SaveEndlessTR(writer),
-		];
-
-		WorldFile.SaveFooter(writer);
-		WorldFile.SaveHeaderPointers(writer, pointers);
-	}
-
 	public class GetPath
 	{
 		public static string GetDirPath()
 		{
-			return Main.worldPathName[..^5];
+			return Path.Combine(Path.GetDirectoryName(Main.worldPathName),
+								 Path.GetFileNameWithoutExtension(Main.worldPathName));
 		}
 
 		public static string GetWldPath(int i)
 		{
-			return GetDirPath() + "\\" + Main.worldName + i.ToString() + ".wld";
+			return Path.Combine(GetDirPath(), $"{Main.worldName}{i}.wld");
 		}
 
 		public static string GetWldBakPath(int i)
-	{
-		return Path.ChangeExtension(GetWldPath(i), "bak");
-	}
+		{
+			return Path.ChangeExtension(GetWldPath(i), "bak");
+		}
 	}
 }

@@ -101,7 +101,7 @@ namespace EndlessTR.WorldData
             {
                 Debug.Error("BackupWlds: AddZipEntry == null");
             }
-            for (int i = 0; i < WorldData.blockNum; ++i)
+            for (int i = WorldData.blockLeft; i < WorldData.blockRight; ++i)
             {
                 if (FileUtilities.Exists(path, isCloudSave))
                     AddZipEntry.Invoke(null, [zip, GetWldPath(i), isCloudSave]);
@@ -305,7 +305,7 @@ namespace EndlessTR.WorldData
             bool flag = loadFromCloud && Terraria.Social.SocialAPI.Cloud != null;
             try
             {
-                for (int i = 0; i < WorldData.blockNum; ++i)
+                for (int i = WorldData.blockLeft; i < WorldData.blockRight; ++i)
                 {
                     /* TODO: 
                         处理地牢坐标, 以及其他可能原本在header中但无限世界后需要多个的数据
@@ -472,7 +472,7 @@ namespace EndlessTR.WorldData
         {
             int num;
             byte[] array;
-            for (int i = 0; i < WorldData.blockNum; ++i)
+            for (int i = WorldData.blockLeft; i < WorldData.blockRight; ++i)
             {
                 using (MemoryStream memoryStream = new MemoryStream(7000000))
                 {
@@ -490,14 +490,16 @@ namespace EndlessTR.WorldData
 
         public static int SaveEndlessTR(BinaryWriter writer) // 保存有关此模组的内容
         {
-            writer.Write(WorldData.blockNum);
+            writer.Write(WorldData.blockLeft);
+            writer.Write(WorldData.blockRight);
             writer.Write(WorldData.nowBlock);
             return (int)writer.BaseStream.Position;
         }
 
         public static void LoadEndlessTR(BinaryReader reader)
         {
-            WorldData.blockNum = reader.ReadInt32();
+            WorldData.blockLeft = reader.ReadInt32();
+            WorldData.blockRight = reader.ReadInt32();
             WorldData.nowBlock = reader.ReadInt32();
         }
 
