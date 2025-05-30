@@ -356,6 +356,7 @@ namespace EndlessTR.UI
                 Main.ActiveWorldFileData.SetSeed(_WorldSeed);
 
             Main.menuMode = 10;
+            WorldData.WorldData.initiate();
             WorldGen.CreateNewWorld();
         }
     }
