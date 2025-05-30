@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Terraria;
 using Terraria.GameContent.Generation;
+using Terraria.IO;
+using Terraria.WorldBuilding;
 
 namespace EndlessTR.WorldGeneration
 {
@@ -18,21 +20,14 @@ namespace EndlessTR.WorldGeneration
 
         private static void HackInitialGeneration()
         {
-            WorldGen.ModifyPass((PassLegacy)WorldGen.VanillaGenPasses["Shinies"], ILInitialGeneration);
+            WorldGen.DetourPass((PassLegacy)WorldGen.VanillaGenPasses["Shinies"], OnOreGeneration);
         }
 
-        private static void ILInitialGeneration(ILContext il)
+        private static void OnOreGeneration(WorldGen.orig_GenPassDetour orig, object self, GenerationProgress progress, GameConfiguration configuration)
         {
-            var cursor = new ILCursor(il);
-            cursor.EmitDelegate(() =>
-            {
-                WorldGen.drunkWorldGen = true;
-            });
-            cursor.Index = cursor.Instrs.Count - 1;
-            cursor.EmitDelegate(() =>
-            {
-                WorldGen.drunkWorldGen = false;
-            });
+            WorldGen.drunkWorldGen = true;
+            orig(self, progress, configuration);
+            WorldGen.drunkWorldGen = false;
         }
     }
 }

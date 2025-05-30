@@ -23,6 +23,7 @@ namespace EndlessTR
             Player.PlayerHacker.Hack();
             WorldData.TileHack.Hack();
             WorldData.WorldData.Hack();
+            WorldData.Ewld.Hack();
         }
 
         public override void Unload()

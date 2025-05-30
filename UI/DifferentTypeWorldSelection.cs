@@ -319,12 +319,25 @@ namespace EndlessTR.UI
             ((UIPanel)evt.Target).BorderColor = Color.Black;
         }
 
+        private void ResetSpecialSeed()
+        {
+            WorldGen.noTrapsWorldGen = false;
+            WorldGen.notTheBees = false;
+            WorldGen.getGoodWorldGen = false;
+            WorldGen.tenthAnniversaryWorldGen = false;
+            WorldGen.dontStarveWorldGen = false;
+            WorldGen.tempRemixWorldGen = false;
+            WorldGen.tempTenthAnniversaryWorldGen = false;
+            WorldGen.everythingWorldGen = false;
+        }
+
         private void FinishCreatingWorld()
         {
             if (_WorldSeed == null)
             {
                 _WorldSeed = "";
             }
+            ResetSpecialSeed();
             // large world size
             Main.maxTilesX = 8400;
             Main.maxTilesY = 2400;
