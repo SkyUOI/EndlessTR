@@ -24,6 +24,35 @@ namespace EndlessTR.WorldData
             HackEraseWorld();
         }
 
+        public static int SaveEndlessTR(BinaryWriter writer) // 保存有关此模组的内容
+        {
+            writer.Write(WorldData.blockLeft);
+            writer.Write(WorldData.blockRight);
+            writer.Write(WorldData.nowBlock);
+            return (int)writer.BaseStream.Position;
+        }
+
+        public static void LoadEndlessTR(BinaryReader reader)
+        {
+            WorldData.blockLeft = reader.ReadInt32();
+            WorldData.blockRight = reader.ReadInt32();
+            WorldData.nowBlock = reader.ReadInt32();
+        }
+
+        public static void SaveWorldEWld(BinaryWriter writer)
+        {
+            int[] pointers = [
+                WorldFile.SaveFileFormatHeader(writer),
+                WorldFile.SaveWorldHeader(writer),
+                WorldFile.SaveCreativePowers(writer),
+                SaveEndlessTR(writer),
+            ];
+
+            WorldFile.SaveFooter(writer);
+            WorldFile.SaveHeaderPointers(writer, pointers);
+        }
+
+
         public static void HackEraseWorld()
         {
             try
@@ -58,7 +87,7 @@ namespace EndlessTR.WorldData
             try
             {
                 Platform.Get<IPathService>().MoveToRecycleBin(Path.GetDirectoryName(
-                    Main.WorldList[i].Path[..^5] + "/"));
+                    Main.WorldList[i].Path[..^5] + "\\"));
             }
             catch
             {
@@ -81,12 +110,11 @@ namespace EndlessTR.WorldData
             var cursor = new ILCursor(il);
             // cursor.EmitDelegate(() => Debug.Error("WriteArchive"));
             cursor.EmitLdarg0();
-            cursor.EmitLdarg1();
             cursor.EmitLdarg2();
             cursor.EmitDelegate(BackupWlds);
         }
 
-        public static void BackupWlds(Ionic.Zip.ZipFile zip, bool isCloudSave, string path)
+        public static void BackupWlds(Ionic.Zip.ZipFile zip, string path)
         {
             // throw new Exception("backupWlds");
             Assembly terraria = Assembly.Load("tModLoader");
@@ -101,10 +129,10 @@ namespace EndlessTR.WorldData
             {
                 Debug.Error("BackupWlds: AddZipEntry == null");
             }
-            for (int i = WorldData.blockLeft; i < WorldData.blockRight; ++i)
+            for (int i = WorldData.blockLeft; i <= WorldData.blockRight; ++i)
             {
-                if (FileUtilities.Exists(path, isCloudSave))
-                    AddZipEntry.Invoke(null, [zip, GetWldPath(i), isCloudSave]);
+                if (FileUtilities.Exists(path, false))
+                    AddZipEntry.Invoke(null, [zip, Utils.GetPath.GetWldPath(i), false]);
             }
 
         }
@@ -117,6 +145,7 @@ namespace EndlessTR.WorldData
             MonoModHooks.Modify(version2, ILLoadWorld_Version2);
             var LoadWorld = WF.GetMethod("LoadWorld", flag);
             MonoModHooks.Modify(LoadWorld, ILLoadWorld);
+
 
             var LoadHeader = WF.GetMethod("LoadHeader", flag);
             MonoModHooks.Modify(LoadHeader, il =>
@@ -207,6 +236,14 @@ namespace EndlessTR.WorldData
                 && t.Name == "dungeonY");
             cursor.Index += 2;
             cursor.MarkLabel(ilLabel);
+
+            // skip boss and event save
+            // cursor.GotoNext(MoveType.Before, i => i.MatchLdsfld(out var t) && t.Name == "downedBoss1");
+            // ilLabel = cursor.DefineLabel();
+            // cursor.EmitBr(ilLabel);
+            // cursor.GotoNext(MoveType.Before, i => i.MatchLdsfld(out var t) && t.Name == "Adamantite");
+            // cursor.Index += 2;
+            // cursor.MarkLabel(ilLabel);
         }
 
         public static void ILLoadWorld_Version2(ILContext il)
@@ -236,7 +273,6 @@ namespace EndlessTR.WorldData
 
             // 3355
 
-
             cursor.GotoNext(MoveType.Before, i => i.MatchLdcI4(10));
             cursor.Remove();
             cursor.EmitLdcI4(2);
@@ -257,22 +293,8 @@ namespace EndlessTR.WorldData
             cursor.GotoNext(MoveType.Before, i => i.MatchCall(LastMinuteFixes));
             cursor.MarkLabel(lLoadEndlessTR);
             cursor.EmitLdarg0();
-            cursor.EmitDelegate<Action<BinaryReader>>(i => LoadEndlessTR(i));
+            cursor.EmitDelegate<Action<BinaryReader>>(i => Ewld.LoadEndlessTR(i));
 
-            // {
-            // 	Action<string> Error = s => { throw new Exception(s); };
-            // 	// 检查返回值
-            // 	var LoadFooter = typeof(WorldFile).GetMethod("LoadFooter",
-            // 		BindingFlags.Static | BindingFlags.Public
-            // 	);
-            // 	cursor.GotoNext(MoveType.Before, i => i.MatchCall(LoadFooter));
-            // 	cursor.Index += 1;
-            // 	cursor.EmitDelegate<Func<int, int>>(i =>
-            // 	{
-            // 		Error("i:::" + i.ToString());
-            // 		return i;
-            // 	});
-            // }
         }
 
 
@@ -296,49 +318,53 @@ namespace EndlessTR.WorldData
             );
 
             cursor.GotoNext(MoveType.Before, i => i.MatchCall(OnWorldLoad));
-            cursor.EmitLdarg0();
-            cursor.EmitDelegate(LoadWorldWlds);
+            cursor.EmitDelegate(() =>
+            {
+                ExtendingMap.loaded = [false, false, false];
+                LoadWorldWld(WorldData.nowBlock, 0);
+            });
         }
 
-        public static void LoadWorldWlds(bool loadFromCloud)
+        public static void LoadWorldWld(int blockId, int extendingMapId)
         {
-            bool flag = loadFromCloud && Terraria.Social.SocialAPI.Cloud != null;
+            if (ExtendingMap.GetLoaded(extendingMapId)) return;
+            WorldData.nowSaveAndLoad = extendingMapId;
             try
             {
-                for (int i = WorldData.blockLeft; i < WorldData.blockRight; ++i)
-                {
-                    /* TODO: 
-                        处理地牢坐标, 以及其他可能原本在header中但无限世界后需要多个的数据
-                    */
-                    using MemoryStream memoryStream = new MemoryStream(FileUtilities.ReadAllBytes(GetWldPath(i), flag));
-                    using BinaryReader binaryReader = new BinaryReader(memoryStream);
-                    bool[] importance;
-                    if (!LoadImportance(binaryReader, out importance))
-                    {
-                        Debug.Error("LoadImportance Error");
-                    }
-                    try
-                    {
-                        WorldFile.LoadWorldTiles(binaryReader, importance);
-                    }
-                    catch
-                    {
-                        Debug.Error("LoadWorldTiles Error");
-                    }
 
-                    WorldFile.LoadChests(binaryReader);
-                    WorldFile.LoadSigns(binaryReader);
-                    WorldFile.LoadNPCs(binaryReader);
-                    WorldFile.LoadTileEntities(binaryReader);
-                    WorldFile.LoadWeightedPressurePlates(binaryReader);
-                    WorldFile.LoadTownManager(binaryReader);
-                    WorldFile.LoadBestiary(binaryReader, WorldData.versionNumber);
+                /* TODO: 
+                    处理地牢坐标, 以及其他可能原本在header中但无限世界后需要多个的数据
+                */
+                using MemoryStream memoryStream = new MemoryStream(FileUtilities.ReadAllBytes(Utils.GetPath.GetWldPath(blockId), false));
+                using BinaryReader binaryReader = new BinaryReader(memoryStream);
+                bool[] importance;
+                if (!LoadImportance(binaryReader, out importance))
+                {
+                    Debug.Error("LoadImportance Error");
                 }
+                try
+                {
+                    WorldFile.LoadWorldTiles(binaryReader, importance);
+                }
+                catch
+                {
+                    Debug.Error("LoadWorldTiles Error");
+                }
+
+                WorldFile.LoadChests(binaryReader);
+                WorldFile.LoadSigns(binaryReader);
+                WorldFile.LoadNPCs(binaryReader);
+                WorldFile.LoadTileEntities(binaryReader);
+                WorldFile.LoadWeightedPressurePlates(binaryReader);
+                WorldFile.LoadTownManager(binaryReader);
+                WorldFile.LoadBestiary(binaryReader, WorldData.versionNumber);
+
             }
             catch
             {
                 throw new Exception("LoadWorldWlds error");
             }
+            ExtendingMap.SetLoaded(extendingMapId, true);
         }
 
         public static bool LoadImportance(BinaryReader reader, out bool[] importance)
@@ -370,7 +396,19 @@ namespace EndlessTR.WorldData
         {
             var flag = BindingFlags.NonPublic | BindingFlags.Static;
             var InternalSaveWorld = typeof(WorldFile).GetMethod("InternalSaveWorld", flag);
-            MonoModHooks.Modify(InternalSaveWorld, ILInternalSaveWorld);
+            if (InternalSaveWorld == null)
+            {
+                Debug.Error("InternalSaveWorld == null");
+            }
+            try
+            {
+                MonoModHooks.Modify(InternalSaveWorld, ILInternalSaveWorld);
+            }
+            catch
+            {
+                Debug.Error("HackInternalSaveWorld");
+            }
+
 
             var flag_ = BindingFlags.Public | BindingFlags.Static;
 
@@ -380,6 +418,7 @@ namespace EndlessTR.WorldData
 
             var SaveFileFormatHeader = typeof(WorldFile).GetMethod("SaveFileFormatHeader", flag_);
             MonoModHooks.Modify(SaveFileFormatHeader, ILSaveFileFormatHeader);
+
         }
 
         public static void ILInternalSaveWorld(ILContext il)
@@ -392,12 +431,14 @@ namespace EndlessTR.WorldData
             );
             cursor.GotoNext(MoveType.Before, i => i.MatchCall(version2));
             cursor.Remove();
-            cursor.EmitDelegate(SaveWorldEWld);
+            cursor.EmitDelegate(Ewld.SaveWorldEWld);
             // 在文件夹内保存.wld文件
             cursor.GotoNext(MoveType.Before, i => i.MatchLdloc1() && i.Next.MatchLdloc0() &&
                      i.Next.Next.MatchLdarg0());
-            cursor.EmitLdarg0();
-            cursor.EmitDelegate(SaveWorldWlds);
+            cursor.EmitDelegate(() =>
+            {
+                SaveWorldWld(WorldData.nowBlock, 0);
+            });
 
             // 备份世界文件前需要验证文件, 先把他去掉
             // TODO: 修改验证文件的函数valiateWorld
@@ -458,62 +499,30 @@ namespace EndlessTR.WorldData
             return (int)writer.BaseStream.Position;
         }
 
-        public static string GetWldPath(int i)
-        {
-            return Main.worldPathName[..^5] + "/" + Main.worldName + i.ToString() + ".wld";
-        }
 
-        public static string GetWldBakPath(int i)
-        {
-            return Path.ChangeExtension(GetWldPath(i), "bak");
-        }
 
-        public static void SaveWorldWlds(bool useCloudSaving)
+
+
+        public static void SaveWorldWld(int blockId, int extendingMapId)
         {
+            WorldData.nowSaveAndLoad = extendingMapId;
             int num;
             byte[] array;
-            for (int i = WorldData.blockLeft; i < WorldData.blockRight; ++i)
+
+            using (MemoryStream memoryStream = new MemoryStream(7000000))
             {
-                using (MemoryStream memoryStream = new MemoryStream(7000000))
+                using (BinaryWriter writer = new BinaryWriter(memoryStream))
                 {
-                    using (BinaryWriter writer = new BinaryWriter(memoryStream))
-                    {
-                        SaveWorldWld(writer);
-                    }
-                    array = memoryStream.ToArray();
-                    num = array.Length;
+                    SaveWorldWld(writer);
                 }
-                FileUtilities.Write(GetWldPath(i), array, num, useCloudSaving);
-                FileUtilities.Write(GetWldBakPath(i), array, num, useCloudSaving);
+                array = memoryStream.ToArray();
+                num = array.Length;
             }
+            FileUtilities.Write(Utils.GetPath.GetWldPath(blockId), array, num, false);
+            FileUtilities.Write(Utils.GetPath.GetWldBakPath(blockId), array, num, false);
+
         }
 
-        public static int SaveEndlessTR(BinaryWriter writer) // 保存有关此模组的内容
-        {
-            writer.Write(WorldData.blockLeft);
-            writer.Write(WorldData.blockRight);
-            writer.Write(WorldData.nowBlock);
-            return (int)writer.BaseStream.Position;
-        }
-
-        public static void LoadEndlessTR(BinaryReader reader)
-        {
-            WorldData.blockLeft = reader.ReadInt32();
-            WorldData.blockRight = reader.ReadInt32();
-            WorldData.nowBlock = reader.ReadInt32();
-        }
-
-        public static void SaveWorldEWld(BinaryWriter writer)
-        {
-            int[] pointers = [
-                WorldFile.SaveFileFormatHeader(writer),
-                WorldFile.SaveWorldHeader(writer),
-                WorldFile.SaveCreativePowers(writer),
-                SaveEndlessTR(writer),
-            ];
-
-            WorldFile.SaveFooter(writer);
-            WorldFile.SaveHeaderPointers(writer, pointers);
-        }
     }
+
 }
