@@ -31,6 +31,7 @@ namespace EndlessTR
         {
             mod = this;
             base.Load();
+            ObjectHack.MainClone.Init();
             EndlessSelection.Hack();
             Hacker.HackAllFunc();
             Player.PlayerHacker.Hack();

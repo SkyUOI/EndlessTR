@@ -11,7 +11,7 @@ public class PlayerHacker
     public static void Hack()
     {
         HackBordersMovement();
-        HackCameraUpdate();
+        // HackCameraUpdate();
     }
 
     private static void HackBordersMovement()

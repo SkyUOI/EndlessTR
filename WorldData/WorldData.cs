@@ -1,26 +1,10 @@
-using Ionic.Zip;
-using Microsoft.Build.Tasks;
-using Mono.Cecil.Cil;
 using MonoMod.Cil;
-using rail;
-using ReLogic.OS;
-using SteelSeries.GameSense;
 using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.IO.Compression;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Terraria;
-using Terraria.GameInput;
-using Terraria.IO;
 using Terraria.ModLoader;
 using Terraria.Utilities;
 
@@ -38,6 +22,14 @@ public static class Debug
 			ILCursor cursor = new ILCursor(il);
 			ilFunc(cursor);
 		});
+	}
+
+	public static void CheckNull<T>(T var, string message = "var")
+	{
+		if (var == null)
+		{
+			Error($"{message} == null");
+		}
 	}
 
 	public static void LogIL(ILContext il)
@@ -105,24 +97,7 @@ public class ExtendingMap
 
 }
 
-public class ExtendingVars
-{
-	public static double ladyBugRainBoost;
 
-	public static bool getGoodWorld;
-	public static bool drunkWorld;
-	public static bool tenthAnniversaryWorld;
-	public static bool dontStarveWorld;
-	public static bool notTheBeesWorld;
-	public static bool remixWorld;
-	public static bool noTrapsWorld;
-	public static bool zenithWorld;
-	public static bool afterPartyOfDoom;
-	public static bool shimmerAlpha;
-	public static bool shimmerDarken;
-	public static bool shimmerBrightenDelay;
-
-}
 
 public class WorldData
 {
@@ -225,3 +200,4 @@ public static class GetTile
 		return WorldData.MapData[WorldData.nowSaveAndLoad, x, y];
 	}
 }
+

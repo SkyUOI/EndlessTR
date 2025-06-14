@@ -32,176 +32,247 @@ namespace EndlessTR.WorldData
             HackWorldFile();
         }
 
-        private static void HackWorldFile()
+        /// <summary>
+        /// 由原有的命名空间获取独立出的数据所处的命名空间
+        /// Terraria.SomeClass  -> EndlessTR.WorldData.WorldGenState.SomeClass
+        /// </summary>
+        /// <param name="declaringType"> 原有的命名空间名 </param>
+        /// <returns> 独立出的数据所处的命名空间名 </returns>
+        private static string GetDeclaringType(string declaringType)
         {
-            var methods = typeof(WorldFile).GetMethods();
-            if (methods == null)
+            return "EndlessTR.WorldData.WorldGenState" + declaringType[8..];
+        }
+
+        /// <summary>
+        /// 获取一个类中所有的方法, 包括嵌套类中的
+        /// </summary>
+        /// <param name="className"> 类的名称 </param>
+        /// <returns> 方法的数组 </returns>
+        private static MethodInfo[] DfsGetAllMethods(Type fType)
+        {
+            // 用于标识一个类是否被获取过
+            Dictionary<Type, bool> methodMap = [];
+
+
+            MethodInfo[] dfs(Type type)
             {
-                Debug.Error("TileHack.HackWorldFile methods == null");
+                if (methodMap.ContainsKey(type)) return [];
+                Debug.CheckNull(type, "DfsGetAllMethods: type");
+                methodMap.Add(type, true);
+
+                // 获取该类下直接的方法 
+                IEnumerable<MethodInfo> methods = type.GetMethods();
+
+                // 获取该类下的类
+                var types = type.GetNestedTypes().ToArray();
+
+                foreach (var sonType in types)
+                {
+                    // 获取嵌套类中的方法
+                    // EndlessTR.Log.Debug($"DfsGetAllMethods: {type.FullName} -> {sonType.FullName}");
+                    methods = methods.Concat(dfs(sonType));
+                }
+
+                return methods.ToArray();
             }
 
-            var WorldFileGetTile = typeof(GetTile).GetMethod("WorldFileGetTile", BindingFlags.Static | BindingFlags.Public);
+            return dfs(fType);
+        }
+
+        /// <summary>
+        /// 将WorldFile类下的所有方法的get_Item替换
+        /// </summary>
+        private static void HackWorldFile()
+        {
+            var methods = DfsGetAllMethods(typeof(WorldFile)).Where(MethodValid);
+
+            var WorldFileGetTile = typeof(GetTile).GetMethod("WorldFileGetTile");
             foreach (var method in methods)
             {
-                if (method == null)
-                {
-                    Debug.Error("TileHack.hackWorldFile method == null");
-                }
-                if (!methodValid(method)) continue;
                 try
                 {
                     MonoModHooks.Modify(method, il =>
                     {
-
-                        EndlessTR.Log.Info($"Hack WorldFile method: {method.DeclaringType.FullName}.{method.Name}");
-                        ILCursor cursor = new ILCursor(il);
-                        ReplaceMethod(cursor, "Terraria.Tilemap", "get_Item", WorldFileGetTile);
-
+                        // EndlessTR.Log.Info($"Hack WorldFile method: {method.DeclaringType.FullName}.{method.Name}");
+                        ILCursor cursor = new(il);
+                        ReplaceMethod(cursor, ("Terraria.Tilemap", "get_Item", WorldFileGetTile));
                     });
                 }
                 catch
                 {
-                    Debug.Error($"methodName: {method.DeclaringType.FullName}.{method.Name}");
+                    Debug.Error($"HackWorldFile: methodName: {method.DeclaringType.FullName}.{method.Name}");
                 }
 
             }
         }
 
-        private static bool methodValid(MethodInfo method)
+        private static bool MethodValid(MethodInfo method)
         {
-            return method.DeclaringType.FullName != "System.Object" && method.DeclaringType.FullName != "Object";
+            return !method.DeclaringType.FullName.StartsWith("System") && !method.DeclaringType.FullName.StartsWith("Object")
+                && !method.DeclaringType.FullName.StartsWith("Terraria.WorldGen+Hooks")
+                && !method.IsAbstract
+                && !method.IsVirtual;
         }
 
-        private static void ReplaceMethod(ILCursor cursor, string declaringType, string Name, MethodInfo method)
+        private static void ReplaceMethod(ILCursor cursor, (string declaringType, string name, MethodInfo newMethod) method)
         {
             cursor.Index = 0;
             int cnt = 0;
+            if (method.newMethod == null)
+            {
+                var EndlessTR = typeof(EndlessTR).Assembly;
+                Debug.CheckNull(EndlessTR, "EndlessTR");
+                var type = EndlessTR.GetType(GetDeclaringType(method.declaringType));
+                Debug.CheckNull(type, $" {GetDeclaringType(method.declaringType)}type");
+                method.newMethod = type.GetMethod(method.name, BindingFlags.Public | BindingFlags.Static);
+                Debug.CheckNull(method.newMethod, $"ReplaceMethod: {GetDeclaringType(method.declaringType)}.{method.name}");
+            }
             while (cursor.TryGotoNext(i => i.MatchCall(out var t)
-                            && t.DeclaringType.FullName == declaringType && t.Name == Name))
+                            && t.DeclaringType.FullName == method.declaringType && t.Name == method.name))
             {
                 ++cnt;
                 cursor.Remove();
-                cursor.EmitCall(method);
+                cursor.EmitCall(method.newMethod);
             }
-            EndlessTR.Log.Info($"   finish replacing {cnt} {declaringType}.{Name} with {method.DeclaringType.FullName}.{method.Name} in the method");
+            // EndlessTR.Log.Info($"   finish replacing {cnt} {method.declaringType}.{method.name} with {method.newMethod.DeclaringType.FullName}.{method.newMethod.Name} in the method");
         }
 
-        private static void ReplaceMethod(ILCursor cursor, string declaringType, string Name)
-        {
-            cursor.Index = 0;
-            int cnt = 0;
-            while (cursor.TryGotoNext(i => i.MatchCall(out var t)
-                            && t.DeclaringType.FullName == declaringType && t.Name == Name))
-            {
-                ++cnt;
-                cursor.Remove();
-                var method = typeof(ExtendingVars).GetMethod(Name, BindingFlags.Public | BindingFlags.Static);
-                if (method == null)
-                {
-                    Debug.Error("ReplaceMethod: method == null");
-                }
-                cursor.EmitCall(method);
-            }
-            EndlessTR.Log.Info($"   finish replacing {cnt} {declaringType}.{Name} in the method");
-        }
+        /// <summary>
+        /// 对WorldGen中的所有方法进行il编辑, 替换某些字段和方法
+        /// </summary>
         private static void HackWorldGen()
         {
-            var methods = typeof(WorldGen).GetMethods();
-            if (methods == null)
-            {
-                Debug.Error("TileHack.HackWorldGen methods == null");
-            }
-
+            var methods = DfsGetAllMethods(typeof(WorldGen)).Where(MethodValid);
             var WorldGenGetTile = typeof(GetTile).GetMethod("WorldGenGetTile", BindingFlags.Static | BindingFlags.Public);
             foreach (var method in methods)
             {
-                if (method == null)
-                {
-                    Debug.Error("TileHack.hackWorldGen method == null");
-                }
-                if (!methodValid(method)) continue;
                 try
                 {
+                    // EndlessTR.Log.Info($"Hack WorldGen method: {method.DeclaringType.FullName}.{method.Name}");
                     MonoModHooks.Modify(method, il =>
-                    {
-                        EndlessTR.Log.Info($"Hack WorldGen method: {method.DeclaringType.FullName}.{method.Name}");
+                    {    
                         ILCursor cursor = new ILCursor(il);
-                        if (method.Name == "clearWorld")
-                        {
-                            Debug.LogIL(il);
-                        }
-                        ReplaceMethod(cursor, "Terraria.Tilemap", "get_Item", WorldGenGetTile);
-                        if (method.Name == "clearWorld")
-                        {
-                            Debug.LogIL(il);
-                        }
-                        // 修改世界生成时用到的各种变量
-                        ReplaceVars(cursor);
+                    ReplaceMethods(cursor, [
+                        ("Terraria.Tilemap", "get_Item", WorldGenGetTile),
+                            ("Terraria.NPC", "ResetBadgerHatTime", null),
+                            ("Terraria.Main", "ResetWindCounter", null),
+                            ("Terraria.NPC", "ResetKillCount", null),
+                            ("Terraria.Main", "checkXMas", null),
+                            ("Terraria.Main", "checkHalloween", null),
+                            ]);
+                    // 修改世界生成时用到的各种变量
+                    ReplaceVars(cursor,
+                    [
+                        ("Terraria.Main", "ladyBugRainBoost"),
+                            ("Terraria.Main", "getGoodWorld"),
+                            ("Terraria.Main", "drunkWorld"),
+                            ("Terraria.Main", "tenthAnniversaryWorld"),
+                            ("Terraria.Main", "dontStarveWorld"),
+                            ("Terraria.Main", "notTheBeesWorld"),
+                            ("Terraria.Main", "remixWorld"),
+                            ("Terraria.Main", "noTrapsWorld"),
+                            ("Terraria.Main", "zenithWorld"),
+                            ("Terraria.Main", "afterPartyOfDoom"),
+                            ("Terraria.Main", "shimmerAlpha"),
+                            ("Terraria.Main", "shimmerDarken"),
+                            ("Terraria.Main", "shimmerBrightenDelay"),
+                            ("Terraria.NPC", "freeCake"),
+                            ("Terraria.NPC", "mechQueen"),
+                            ("Terraria.Main", "mapDelay"),
+                            ("Terraria.Main", "waterStyle"),
+                            ("Terraria.Main", "mapDelay"),
+                            ("Terraria.Main", "waterStyle"),
+                            ("Terraria.NPC", "EoCKilledToday"),
+                            ("Terraria.NPC", "WoFKilledToday"),
+                            ("Terraria.Main", "windCounter"),
+                            ("Terraria.Main", "extremeWindCounter"),
+                            ("Terraria.NPC", "killCount"),
+                            ("Terraria.Main", "instance"),
+                            ("Terraria.Main", "mapReady"),
+                            ("Terraria.Main", "Map"),
+                            ("Terraria.Main", "statusText"),
+                            ("Terraria.Main", "ParticleSystem_World_OverPlayers"),
+                            ("Terraria.Main", "ParticleSystem_World_BehindPlayers"),
+                            ("Terraria.Main", "pumpkinMoon"),
+                            ("Terraria.Main", "clearMap"),
+                            ("Terraria.Main", "mapTime"),
+                            ("Terraria.Main", "updateMap"),
+                            ("Terraria.Main", "refreshMap"),
+                            ("Terraria.Main", "eclipse"),
+                            ("Terraria.Main", "slimeRain"),
+                            ("Terraria.Main", "slimeRainTime"),
+                            ("Terraria.Main", "slimeWarningTime"),
+                            ("Terraria.Main", "sundialCooldown"),
+                            ("Terraria.Main", "moondialCooldown"),
+                            ("Terraria.Main", "fastForwardTimeToDawn"),
+                            ("Terraria.Main", "fastForwardTimeToDusk"),
+                            ("Terraria.NPC", "MoonLordCountdown"),
+                            ("Terraria.NPC", "RevengeManager"),
 
+                        ]);
                     });
                 }
                 catch
                 {
-                    Debug.Error($"methodName: {method.DeclaringType.Name}.{method.Name}");
+                    Debug.Error($"HackWorldGen: methodName: {method.DeclaringType.Name}.{method.Name}");
                 }
 
             }
         }
 
-        private static void ReplaceVar(ILCursor cursor, string declaringType, string Name)
+        private static void ReplaceMethods(ILCursor cursor, (string, string, MethodInfo)[] methods)
         {
-            try
+            foreach ((string, string, MethodInfo) tuple3 in methods)
             {
-                cursor.Index = 0;
-                while (cursor.TryGotoNext(i => i.MatchStfld(out var t)
-                            && t.DeclaringType.FullName == declaringType && t.Name == Name))
-                {
-                    cursor.Remove();
-                    cursor.EmitStfld(typeof(ExtendingVars).GetField(Name));
-                }
-            }
-            catch
-            {
-                Debug.Error($"TileHack.ReplaceVars Hack stfld {declaringType}.{Name} Error");
-            }
-
-            try
-            {
-                cursor.Index = 0;
-                while (cursor.TryGotoNext(i => i.MatchStfld(out var t)
-                            && t.DeclaringType.FullName == declaringType && t.Name == Name))
-                {
-                    cursor.Remove();
-                    cursor.EmitStfld(typeof(ExtendingVars).GetField(Name));
-                }
-            }
-            catch
-            {
-                Debug.Error($"TileHack.ReplaceVars Hack ldfld {declaringType}.{Name} Error");
+                ReplaceMethod(cursor, tuple3);
             }
         }
 
-        private static void ReplaceVars(ILCursor cursor)
+        private static void ReplaceVar(ILCursor cursor, (string declaringType, string Name) var)
         {
-            string[][] vars = [
-                ["Terraria.Main", "ladyBugRainBoost"],
-                ["Terraria.Main", "getGoodWorld"],
-                ["Terraria.Main", "drunkWorld"],
-                ["Terraria.Main", "tenthAnniversaryWorld"],
-                ["Terraria.Main", "dontStarveWorld"],
-                ["Terraria.Main", "notTheBeesWorld"],
-                ["Terraria.Main", "remixWorld"],
-                ["Terraria.Main", "noTrapsWorld"],
-                ["Terraria.Main", "zenithWorld"],
-                ["Terraria.Main", "afterPartyOfDoom"],
-                ["Terraria.Main", "shimmerAlpha"],
-                ["Terraria.Main", "shimmerDarken"],
-                ["Terraria.Main", "shimmerBrightenDelay"],
+            // EndlessTR.Log.Info($"replace var {var.declaringType}.{var.Name}");
+            var type = typeof(EndlessTR).Assembly.GetType(GetDeclaringType(var.declaringType));
+            Debug.CheckNull(type, $"replaceVar: {GetDeclaringType(var.declaringType)} type");
 
-            ];
-            foreach (string[] pair in vars)
+            var field = type.GetField(var.Name);
+            Debug.CheckNull(field, $"ReplaceVar {var.declaringType}.{var.Name}: field");
+
+            try
             {
-                ReplaceVar(cursor, pair[0], pair[1]);
+                cursor.Index = 0;
+                while (cursor.TryGotoNext(i => i.MatchStfld(out var t)
+                            && t.DeclaringType.FullName == var.declaringType && t.Name == var.Name))
+                {
+                    cursor.Remove();
+                    cursor.EmitStfld(field);
+                }
+            }
+            catch
+            {
+                Debug.Error($"TileHack.ReplaceVars Hack stfld {var.declaringType}.{var.Name} Error");
+            }
+
+            try
+            {
+                cursor.Index = 0;
+                while (cursor.TryGotoNext(i => i.MatchStfld(out var t)
+                            && t.DeclaringType.FullName == var.declaringType && t.Name == var.Name))
+                {
+                    cursor.Remove();
+                    cursor.EmitStfld(field);
+                }
+            }
+            catch
+            {
+                Debug.Error($"TileHack.ReplaceVars Hack ldfld {var.declaringType}.{var.Name} Error");
+            }
+        }
+
+        private static void ReplaceVars(ILCursor cursor, (string, string)[] vars)
+        {
+            foreach ((string, string) pair in vars)
+            {
+                ReplaceVar(cursor, pair);
             }
         }
 
