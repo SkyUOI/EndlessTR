@@ -29,6 +29,10 @@ namespace EndlessTR.WorldData
             writer.Write(WorldData.blockLeft);
             writer.Write(WorldData.blockRight);
             writer.Write(WorldData.nowBlock);
+            writer.Write(WorldGeneration.WorldGeneration.BorderX[0]);
+            writer.Write(WorldGeneration.WorldGeneration.BorderX[1]);
+            writer.Write(WorldGeneration.WorldGeneration.PreviousBorderX[0]);
+            writer.Write(WorldGeneration.WorldGeneration.PreviousBorderX[1]);
             return (int)writer.BaseStream.Position;
         }
 
@@ -37,19 +41,15 @@ namespace EndlessTR.WorldData
             WorldData.blockLeft = reader.ReadInt32();
             WorldData.blockRight = reader.ReadInt32();
             WorldData.nowBlock = reader.ReadInt32();
+            WorldGeneration.WorldGeneration.BorderX[0] = reader.ReadInt32();
+            WorldGeneration.WorldGeneration.BorderX[1] = reader.ReadInt32();
+            WorldGeneration.WorldGeneration.PreviousBorderX[0] = reader.ReadInt32();
+            WorldGeneration.WorldGeneration.PreviousBorderX[1] = reader.ReadInt32();
         }
 
         public static void SaveWorldEWld(BinaryWriter writer)
         {
-            int[] pointers = [
-                WorldFile.SaveFileFormatHeader(writer),
-                WorldFile.SaveWorldHeader(writer),
-                WorldFile.SaveCreativePowers(writer),
-                SaveEndlessTR(writer),
-            ];
-
-            WorldFile.SaveFooter(writer);
-            WorldFile.SaveHeaderPointers(writer, pointers);
+            SaveEndlessTR(writer);
         }
 
 
@@ -141,176 +141,26 @@ namespace EndlessTR.WorldData
         {
             var flag = BindingFlags.Public | BindingFlags.Static;
             var WF = typeof(WorldFile);
-            var version2 = WF.GetMethod("LoadWorld_Version2", flag);
-            MonoModHooks.Modify(version2, ILLoadWorld_Version2);
             var LoadWorld = WF.GetMethod("LoadWorld", flag);
             MonoModHooks.Modify(LoadWorld, ILLoadWorld);
-
-
-            var LoadHeader = WF.GetMethod("LoadHeader", flag);
-            MonoModHooks.Modify(LoadHeader, il =>
-            {
-                var cursor = new ILCursor(il);
-                ILLabel iLLabel = cursor.DefineLabel();
-                cursor.GotoNext(MoveType.Before, i => i.MatchLdarg0() && i.Next.MatchCallvirt(out var t)
-                    && i.Next.Next.MatchStsfld(out var b) && b.Name == "dungeonX");
-                cursor.EmitBr(iLLabel);
-                cursor.Index += 6;
-                cursor.MarkLabel(iLLabel);
-            });
-
-
-            Debug.Hack(WF, "LoadFileFormatHeader", flag, cursor =>
-            {
-                // 把有关importance的部分去掉, 放到另一个函数里用于wld文件load
-                // 同时注意save也要修改
-
-                // 	// ushort num2 = reader.ReadUInt16();
-                // IL_0078: ldarg.0
-                // IL_0079: callvirt instance uint16[System.Runtime]System.IO.BinaryReader::ReadUInt16()
-                // IL_007e: stloc.1
-                // 匹配到这里
-                try
-                {
-                    cursor.GotoNext(MoveType.Before, i => i.MatchLdarg0()
-                    && i.Next.MatchCallvirt(out var t) && t.Name == "ReadUInt16"
-                    && i.Next.Next.MatchStloc1());
-                }
-                catch
-                {
-                    Debug.Error("gotoNext LoadFileFormatHeader ReadUInt16 Error");
-                }
-
-                cursor.EmitLdcI4(1);
-                cursor.EmitRet();
-            });
-        }
-
-        public static void ILSaveFileFormatHeader(ILContext il)
-        {
-            var cursor = new ILCursor(il);
-            cursor.GotoNext(MoveType.Before, i => i.MatchLdcI4(out var t) && t == 11);
-            cursor.Remove();
-            cursor.EmitLdcI4(4);
-
-            try
-            {
-                cursor.GotoNext(MoveType.Before, i => i.MatchLdarg0()
-                && i.Next.MatchLdloc0() && i.Next.Next.MatchCallvirt(out var t) && t.Name == "Write");
-            }
-            catch
-            {
-                Debug.Error("gotoNext SaveFileFormatHeader Write Error");
-            }
-
-            // 将有关importance的部分去除, 直接跳转到结尾
-            ILLabel importanceEnd = cursor.DefineLabel();
-            cursor.EmitBr(importanceEnd);
-
-            try
-            {
-                cursor.GotoNext(MoveType.Before, i => i.MatchLdarg0()
-                && i.Next.MatchCallvirt(out var t) && t.Name == "get_BaseStream");
-            }
-            catch
-            {
-                Debug.Error("gotoNext SaveFileFormatHeader get_BaseStream Error");
-            }
-
-            cursor.MarkLabel(importanceEnd);
-        }
-
-        public static void ILSaveWorldHeader(ILContext il)
-        {
-            /* TODO: 
-                处理类似地牢坐标的可能原本在header中但无限世界后需要多个的数据
-            */
-            var cursor = new ILCursor(il);
-            cursor.GotoNext(MoveType.Before, i => i.Next != null
-                && i.Next.MatchLdsfld(out var t) && t.DeclaringType.FullName == "Terraria.Main"
-                && t.Name == "dungeonX");
-            ILLabel ilLabel = cursor.DefineLabel();
-            cursor.EmitBr(ilLabel);
-            cursor.GotoNext(MoveType.Before, i => i != null
-                && i.MatchLdsfld(out var t) && t.DeclaringType.FullName == "Terraria.Main"
-                && t.Name == "dungeonY");
-            cursor.Index += 2;
-            cursor.MarkLabel(ilLabel);
-
-            // skip boss and event save
-            // cursor.GotoNext(MoveType.Before, i => i.MatchLdsfld(out var t) && t.Name == "downedBoss1");
-            // ilLabel = cursor.DefineLabel();
-            // cursor.EmitBr(ilLabel);
-            // cursor.GotoNext(MoveType.Before, i => i.MatchLdsfld(out var t) && t.Name == "Adamantite");
-            // cursor.Index += 2;
-            // cursor.MarkLabel(ilLabel);
-        }
-
-        public static void ILLoadWorld_Version2(ILContext il)
-        {
-            var cursor = new ILCursor(il);
-
-
-            var LoadWorldTiles = typeof(WorldFile).GetMethod("LoadWorldTiles",
-                BindingFlags.Public | BindingFlags.Static
-            );
-            cursor.GotoNext(MoveType.Before, i => i.Next.Next.MatchCall(LoadWorldTiles));
-            cursor.Index -= 3;
-
-            cursor.Remove();
-            ILLabel br = cursor.DefineLabel();
-            cursor.EmitBeq(br);
-            // cursor.GotoNext(MoveType.Before, i => i.Next.Next.MatchCall(LoadWorldTiles));
-            // ILLabel iLLabel = cursor.DefineLabel();
-            // cursor.MarkLabel(br);
-            // cursor.EmitBr(iLLabel);
-
-
-            cursor.GotoNext(MoveType.Before, i => i.MatchLdsfld(out var t)
-                && t.Name == "_versionNumber" && t.DeclaringType.FullName == "Terraria.IO.WorldFile"
-                && i.Next.MatchLdcI4(220));
-            cursor.MarkLabel(br);
-
-            // 3355
-
-            cursor.GotoNext(MoveType.Before, i => i.MatchLdcI4(10));
-            cursor.Remove();
-            cursor.EmitLdcI4(2);
-
-
-            var LastMinuteFixes = typeof(WorldFile).GetMethod("LoadWorld_LastMinuteFixes",
-                BindingFlags.Static | BindingFlags.NonPublic);
-            cursor.GotoNext(MoveType.Before, i => i.MatchCall(LastMinuteFixes));
-
-            ILLabel lLoadEndlessTR = cursor.DefineLabel();
-            cursor.Index -= 3;
-            cursor.Remove();
-            cursor.EmitBeq(lLoadEndlessTR);
-
-            // cursor.EmitLdarg0();
-            // cursor.EmitDelegate<Action<BinaryReader>>(r => Debug.Error("rd " + r.BaseStream.Position.ToString()));
-
-            cursor.GotoNext(MoveType.Before, i => i.MatchCall(LastMinuteFixes));
-            cursor.MarkLabel(lLoadEndlessTR);
-            cursor.EmitLdarg0();
-            cursor.EmitDelegate<Action<BinaryReader>>(i => Ewld.LoadEndlessTR(i));
-
-        }
-
-
-        public static void SetVersionNumber(int i)
-        {
-            WorldData.versionNumber = i;
         }
 
         public static void ILLoadWorld(ILContext il)
         {
             var cursor = new ILCursor(il);
 
-            cursor.GotoNext(MoveType.Before, i => i.MatchLdsfld(out var t) && i.Next.MatchLdcI4(0) && i.Next.Next.MatchBle(out var a));
-            cursor.EmitLdloc(5);
-            cursor.EmitDelegate(SetVersionNumber);
+            var flag = BindingFlags.Static | BindingFlags.Public;
 
+            var LoadWorld_Version2 = typeof(WorldFile).GetMethod(nameof(WorldFile.LoadWorld_Version2), flag);
+            if (LoadWorld_Version2 == null)
+            {
+                throw new Exception("LoadWorld_Version2 == null");
+            }
+
+            var _LoadWorldEWld = typeof(Ewld).GetMethod(nameof(LoadWorldEWld), flag);
+
+            cursor.GotoNext(MoveType.Before, i => i.MatchCall(LoadWorld_Version2));
+            cursor.EmitCall(_LoadWorldEWld);
 
             var OnWorldLoad = typeof(SystemLoader).GetMethod(
                 "OnWorldLoad",
@@ -327,69 +177,113 @@ namespace EndlessTR.WorldData
 
         public static void LoadWorldWld(int blockId, int extendingMapId)
         {
-            if (ExtendingMap.GetLoaded(extendingMapId)) return;
-            WorldData.nowSaveAndLoad = extendingMapId;
             try
             {
+                BindingFlags flag = BindingFlags.NonPublic | BindingFlags.Static;
+                int _versionNumber = (int)typeof(WorldFile).GetField("_versionNumber", flag).GetValue(null);
+                MethodInfo LoadBestiaryForVersionsBefore210 = 
+                    typeof(WorldFile).GetMethod("LoadBestiaryForVersionsBefore210", flag);
+                if (LoadBestiaryForVersionsBefore210 == null) {
+                    throw new Exception("LoadBestiaryForVersionsBefore210 == null");
+                }
 
-                /* TODO: 
-                    处理地牢坐标, 以及其他可能原本在header中但无限世界后需要多个的数据
-                */
+                MethodInfo LoadWorld_LastMinuteFixes = 
+                    typeof(WorldFile).GetMethod("LoadWorld_LastMinuteFixes", flag);
+                if (LoadWorld_LastMinuteFixes == null) {
+                    throw new Exception("LoadWorld_LastMinuteFixes== null");
+                }
+
                 using MemoryStream memoryStream = new MemoryStream(FileUtilities.ReadAllBytes(Utils.GetPath.GetWldPath(blockId), false));
-                using BinaryReader binaryReader = new BinaryReader(memoryStream);
-                bool[] importance;
-                if (!LoadImportance(binaryReader, out importance))
+                using BinaryReader reader = new BinaryReader(memoryStream);
+                if (ExtendingMap.GetLoaded(extendingMapId)) return;
+                WorldData.nowSaveAndLoad = extendingMapId;
+                reader.BaseStream.Position = 0L;
+                if (!WorldFile.LoadFileFormatHeader(reader, out var importance, out var positions))
+                    throw new Exception($"load block {blockId} Error");
+
+
+                if (reader.BaseStream.Position != positions[0])
+                    throw new Exception($"load block {blockId} Error");
+
+                WorldFile.LoadHeader(reader);
+                if (reader.BaseStream.Position != positions[1])
+                    throw new Exception($"load block {blockId} Error");
+
+                WorldFile.LoadWorldTiles(reader, importance);
+                if (reader.BaseStream.Position != positions[2])
+                    throw new Exception($"load block {blockId} Error");
+
+                WorldFile.LoadChests(reader);
+                if (reader.BaseStream.Position != positions[3])
+                    throw new Exception($"load block {blockId} Error");
+
+                WorldFile.LoadSigns(reader);
+                if (reader.BaseStream.Position != positions[4])
+                    throw new Exception($"load block {blockId} Error");
+
+                WorldFile.LoadNPCs(reader);
+                if (reader.BaseStream.Position != positions[5])
+                    throw new Exception($"load block {blockId} Error");
+
+                if (_versionNumber >= 116)
                 {
-                    Debug.Error("LoadImportance Error");
-                }
-                try
-                {
-                    WorldFile.LoadWorldTiles(binaryReader, importance);
-                }
-                catch
-                {
-                    Debug.Error("LoadWorldTiles Error");
+                    if (_versionNumber < 122)
+                    {
+                        WorldFile.LoadDummies(reader);
+                        if (reader.BaseStream.Position != positions[6])
+                            throw new Exception($"load block {blockId} Error");
+                    }
+                    else
+                    {
+                        WorldFile.LoadTileEntities(reader);
+                        if (reader.BaseStream.Position != positions[6])
+                            throw new Exception($"load block {blockId} Error");
+                    }
                 }
 
-                WorldFile.LoadChests(binaryReader);
-                WorldFile.LoadSigns(binaryReader);
-                WorldFile.LoadNPCs(binaryReader);
-                WorldFile.LoadTileEntities(binaryReader);
-                WorldFile.LoadWeightedPressurePlates(binaryReader);
-                WorldFile.LoadTownManager(binaryReader);
-                WorldFile.LoadBestiary(binaryReader, WorldData.versionNumber);
+                if (_versionNumber >= 170)
+                {
+                    WorldFile.LoadWeightedPressurePlates(reader);
+                    if (reader.BaseStream.Position != positions[7])
+                        throw new Exception($"load block {blockId} Error");
+                }
+
+                if (_versionNumber >= 189)
+                {
+                    WorldFile.LoadTownManager(reader);
+                    if (reader.BaseStream.Position != positions[8])
+                        throw new Exception($"load block {blockId} Error");
+                }
+
+                if (_versionNumber >= 210)
+                {
+                    WorldFile.LoadBestiary(reader, _versionNumber);
+                    if (reader.BaseStream.Position != positions[9])
+                        throw new Exception($"load block {blockId} Error");
+                }
+                else
+                {
+                    LoadBestiaryForVersionsBefore210.Invoke(null, []);
+                }
+
+                if (_versionNumber >= 220)
+                {
+                    WorldFile.LoadCreativePowers(reader, _versionNumber);
+                    if (reader.BaseStream.Position != positions[10])
+                        throw new Exception($"load block {blockId} Error");
+                }
+
+                LoadWorld_LastMinuteFixes.Invoke(null, []);
+                if (WorldFile.LoadFooter(reader) != 0)
+                    throw new Exception($"load block {blockId} Error");
+                ExtendingMap.SetLoaded(extendingMapId, true);
 
             }
             catch
             {
                 throw new Exception("LoadWorldWlds error");
             }
-            ExtendingMap.SetLoaded(extendingMapId, true);
-        }
 
-        public static bool LoadImportance(BinaryReader reader, out bool[] importance)
-        {
-            ushort num2 = reader.ReadUInt16();
-            importance = new bool[num2];
-            byte b = 0;
-            byte b2 = 128;
-            for (int i = 0; i < num2; i++)
-            {
-                if (b2 == 128)
-                {
-                    b = reader.ReadByte();
-                    b2 = 1;
-                }
-                else
-                {
-                    b2 = (byte)(b2 << 1);
-                }
-
-                if ((b & b2) == b2)
-                    importance[i] = true;
-            }
-
-            return true;
         }
 
         public static void HackSaveWorld()
@@ -412,13 +306,12 @@ namespace EndlessTR.WorldData
 
             var flag_ = BindingFlags.Public | BindingFlags.Static;
 
-            var SaveWorldHeader = typeof(WorldFile).GetMethod("SaveWorldHeader", flag_);
-            MonoModHooks.Modify(SaveWorldHeader, ILSaveWorldHeader);
 
-
-            var SaveFileFormatHeader = typeof(WorldFile).GetMethod("SaveFileFormatHeader", flag_);
-            MonoModHooks.Modify(SaveFileFormatHeader, ILSaveFileFormatHeader);
-
+        }
+        public static int LoadWorldEWld(BinaryReader reader)
+        {
+            LoadEndlessTR(reader);
+            return 0;
         }
 
         public static void ILInternalSaveWorld(ILContext il)
@@ -454,55 +347,6 @@ namespace EndlessTR.WorldData
 
         }
 
-        public static void SaveWorldWld(BinaryWriter writer)
-        {
-            /* TODO: 
-                处理地牢坐标, 以及其他可能原本在header中但无限世界后需要多个的数据
-            */
-            SaveImportance(writer); // 原本在fileformatheader里的内容, 与tile有关
-            WorldFile.SaveWorldTiles(writer);
-            WorldFile.SaveChests(writer);
-            WorldFile.SaveSigns(writer);
-            WorldFile.SaveNPCs(writer);
-            WorldFile.SaveTileEntities(writer);
-            WorldFile.SaveWeightedPressurePlates(writer);
-            WorldFile.SaveTownManager(writer);
-            WorldFile.SaveBestiary(writer);
-        }
-
-        public static int SaveImportance(BinaryWriter writer)
-        {
-            ushort count = Terraria.ID.TileID.Count;
-            writer.Write(count);
-            byte b = 0;
-            byte b2 = 1;
-            for (int i = 0; i < count; i++)
-            {
-                if (Main.tileFrameImportant[i])
-                    b = (byte)(b | b2);
-
-                if (b2 == 128)
-                {
-                    writer.Write(b);
-                    b = 0;
-                    b2 = 1;
-                }
-                else
-                {
-                    b2 = (byte)(b2 << 1);
-                }
-            }
-
-            if (b2 != 1)
-                writer.Write(b);
-
-            return (int)writer.BaseStream.Position;
-        }
-
-
-
-
-
         public static void SaveWorldWld(int blockId, int extendingMapId)
         {
             WorldData.nowSaveAndLoad = extendingMapId;
@@ -513,7 +357,22 @@ namespace EndlessTR.WorldData
             {
                 using (BinaryWriter writer = new BinaryWriter(memoryStream))
                 {
-                    SaveWorldWld(writer);
+                    int[] pointers = new int[11] {
+                WorldFile.SaveFileFormatHeader(writer),
+                WorldFile.SaveWorldHeader(writer),
+                WorldFile.SaveWorldTiles(writer),
+                WorldFile.SaveChests(writer),
+                WorldFile.SaveSigns(writer),
+                WorldFile.SaveNPCs(writer),
+                WorldFile.SaveTileEntities(writer),
+                WorldFile.SaveWeightedPressurePlates(writer),
+                WorldFile.SaveTownManager(writer),
+                WorldFile.SaveBestiary(writer),
+                WorldFile.SaveCreativePowers(writer)
+            };
+
+                    WorldFile.SaveFooter(writer);
+                    WorldFile.SaveHeaderPointers(writer, pointers);
                 }
                 array = memoryStream.ToArray();
                 num = array.Length;
