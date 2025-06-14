@@ -1,0 +1,211 @@
+        AddGenerationPass("Reset", delegate (GenerationProgress progress, GameConfiguration passConfig) {
+			if (genRand.Next(2) == 0)
+				GenVars.crimsonLeft = false;
+			else
+				GenVars.crimsonLeft = true;
+
+			GenVars.numOceanCaveTreasure = 0;
+			GenVars.skipDesertTileCheck = false;
+			growGrassUnderground = false;
+			gen = true;
+			Liquid.ReInit();
+			noTileActions = true;
+			progress.Message = "";
+			SetupStatueList();
+			RandomizeWeather();
+			Main.cloudAlpha = 0f;
+			Main.maxRaining = 0f;
+			Main.raining = false;
+			heartCount = 0;
+			GenVars.extraBastStatueCount = 0;
+			GenVars.extraBastStatueCountMax = 2;
+			Main.checkXMas();
+			Main.checkHalloween();
+			ResetGenerator();
+			GenVars.UndergroundDesertLocation = Rectangle.Empty;
+			GenVars.UndergroundDesertHiveLocation = Rectangle.Empty;
+			GenVars.numLarva = 0;
+			List<int> list3 = new List<int> {
+				274,
+				220,
+				112,
+				218,
+				3019
+			};
+
+			if (remixWorldGen) {
+				list3 = new List<int> {
+					274,
+					220,
+					683,
+					218,
+					3019
+				};
+			}
+
+			List<int> list4 = new List<int>();
+			while (list3.Count > 0) {
+				int index = genRand.Next(list3.Count);
+				int item = list3[index];
+				list4.Add(item);
+				list3.RemoveAt(index);
+			}
+
+			GenVars.hellChestItem = list4.ToArray();
+			int num1086 = 86400;
+			Main.slimeRainTime = -genRand.Next(num1086 * 2, num1086 * 3);
+			Main.cloudBGActive = -genRand.Next(8640, 86400);
+			skipFramingDuringGen = false;
+			SavedOreTiers.Copper = 7;
+			SavedOreTiers.Iron = 6;
+			SavedOreTiers.Silver = 9;
+			SavedOreTiers.Gold = 8;
+			GenVars.copperBar = 20;
+			GenVars.ironBar = 22;
+			GenVars.silverBar = 21;
+			GenVars.goldBar = 19;
+			if (genRand.Next(2) == 0) {
+				GenVars.copper = 166;
+				GenVars.copperBar = 703;
+				SavedOreTiers.Copper = 166;
+			}
+
+			if ((!dontStarveWorldGen || drunkWorldGen) && genRand.Next(2) == 0) {
+				GenVars.iron = 167;
+				GenVars.ironBar = 704;
+				SavedOreTiers.Iron = 167;
+			}
+
+			if (genRand.Next(2) == 0) {
+				GenVars.silver = 168;
+				GenVars.silverBar = 705;
+				SavedOreTiers.Silver = 168;
+			}
+
+			if ((!dontStarveWorldGen || drunkWorldGen) && genRand.Next(2) == 0) {
+				GenVars.gold = 169;
+				GenVars.goldBar = 706;
+				SavedOreTiers.Gold = 169;
+			}
+
+			crimson = genRand.Next(2) == 0;
+			if (WorldGenParam_Evil == 0)
+				crimson = false;
+
+			if (WorldGenParam_Evil == 1)
+				crimson = true;
+
+			if (GenVars.jungleHut == 0)
+				GenVars.jungleHut = 119;
+			else if (GenVars.jungleHut == 1)
+				GenVars.jungleHut = 120;
+			else if (GenVars.jungleHut == 2)
+				GenVars.jungleHut = 158;
+			else if (GenVars.jungleHut == 3)
+				GenVars.jungleHut = 175;
+			else if (GenVars.jungleHut == 4)
+				GenVars.jungleHut = 45;
+
+			Main.worldID = genRand.Next(int.MaxValue);
+			RandomizeTreeStyle();
+			RandomizeCaveBackgrounds();
+			RandomizeBackgrounds(genRand);
+			RandomizeMoonState(genRand);
+			TreeTops.CopyExistingWorldInfoForWorldGeneration();
+			GenVars.dungeonSide = ((genRand.Next(2) != 0) ? 1 : (-1));
+			if (remixWorldGen) {
+				if (GenVars.dungeonSide == -1) {
+					double num1087 = 1.0 - (double)genRand.Next(20, 35) * 0.01;
+					GenVars.jungleOriginX = (int)((double)Main.maxTilesX * num1087);
+				}
+				else {
+					double num1088 = (double)genRand.Next(20, 35) * 0.01;
+					GenVars.jungleOriginX = (int)((double)Main.maxTilesX * num1088);
+				}
+			}
+			else {
+				int minValue3 = 15;
+				int maxValue12 = 30;
+				if (tenthAnniversaryWorldGen && !remixWorldGen) {
+					minValue3 = 25;
+					maxValue12 = 35;
+				}
+
+				if (GenVars.dungeonSide == -1) {
+					double num1089 = 1.0 - (double)genRand.Next(minValue3, maxValue12) * 0.01;
+					GenVars.jungleOriginX = (int)((double)Main.maxTilesX * num1089);
+				}
+				else {
+					double num1090 = (double)genRand.Next(minValue3, maxValue12) * 0.01;
+					GenVars.jungleOriginX = (int)((double)Main.maxTilesX * num1090);
+				}
+			}
+
+			int num1091 = genRand.Next(Main.maxTilesX);
+			if (drunkWorldGen)
+				GenVars.dungeonSide *= -1;
+
+			if (GenVars.dungeonSide == 1) {
+				while ((double)num1091 < (double)Main.maxTilesX * 0.6 || (double)num1091 > (double)Main.maxTilesX * 0.75) {
+					num1091 = genRand.Next(Main.maxTilesX);
+				}
+			}
+			else {
+				while ((double)num1091 < (double)Main.maxTilesX * 0.25 || (double)num1091 > (double)Main.maxTilesX * 0.4) {
+					num1091 = genRand.Next(Main.maxTilesX);
+				}
+			}
+
+			if (drunkWorldGen)
+				GenVars.dungeonSide *= -1;
+
+			int num1092 = genRand.Next(50, 90);
+			double num1093 = (double)Main.maxTilesX / 4200.0;
+			num1092 += (int)((double)genRand.Next(20, 40) * num1093);
+			num1092 += (int)((double)genRand.Next(20, 40) * num1093);
+			int num1094 = num1091 - num1092;
+			num1092 = genRand.Next(50, 90);
+			num1092 += (int)((double)genRand.Next(20, 40) * num1093);
+			num1092 += (int)((double)genRand.Next(20, 40) * num1093);
+			int num1095 = num1091 + num1092;
+			if (num1094 < 0)
+				num1094 = 0;
+
+			if (num1095 > Main.maxTilesX)
+				num1095 = Main.maxTilesX;
+
+			GenVars.snowOriginLeft = num1094;
+			GenVars.snowOriginRight = num1095;
+			GenVars.leftBeachEnd = genRand.Next(GenVars.beachSandRandomCenter - GenVars.beachSandRandomWidthRange, GenVars.beachSandRandomCenter + GenVars.beachSandRandomWidthRange);
+			if (tenthAnniversaryWorldGen && !remixWorldGen)
+				GenVars.leftBeachEnd = GenVars.beachSandRandomCenter + GenVars.beachSandRandomWidthRange;
+
+			if (GenVars.dungeonSide == 1)
+				GenVars.leftBeachEnd += GenVars.beachSandDungeonExtraWidth;
+			else
+				GenVars.leftBeachEnd += GenVars.beachSandJungleExtraWidth;
+
+			GenVars.rightBeachStart = Main.maxTilesX - genRand.Next(GenVars.beachSandRandomCenter - GenVars.beachSandRandomWidthRange, GenVars.beachSandRandomCenter + GenVars.beachSandRandomWidthRange);
+			if (tenthAnniversaryWorldGen && !remixWorldGen)
+				GenVars.rightBeachStart = Main.maxTilesX - (GenVars.beachSandRandomCenter + GenVars.beachSandRandomWidthRange);
+
+			if (GenVars.dungeonSide == -1)
+				GenVars.rightBeachStart -= GenVars.beachSandDungeonExtraWidth;
+			else
+				GenVars.rightBeachStart -= GenVars.beachSandJungleExtraWidth;
+
+			int num1096 = 50;
+			if (GenVars.dungeonSide == -1)
+				GenVars.dungeonLocation = genRand.Next(GenVars.leftBeachEnd + num1096, (int)((double)Main.maxTilesX * 0.2));
+			else
+				GenVars.dungeonLocation = genRand.Next((int)((double)Main.maxTilesX * 0.8), GenVars.rightBeachStart - num1096);
+
+			int num1097 = 0;
+			if (Main.maxTilesX >= 8400)
+				num1097 = 2;
+			else if (Main.maxTilesX >= 6400)
+				num1097 = 1;
+
+			GenVars.extraBastStatueCountMax = 2 + num1097;
+			Main.tileSolid[659] = false;
+		});
