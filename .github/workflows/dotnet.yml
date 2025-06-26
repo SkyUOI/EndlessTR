@@ -20,8 +20,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    - name: Restore dependencies
-      run: dotnet restore
     - name: Setup tModLoader
       run: |
         cd ..
@@ -39,4 +37,8 @@ jobs:
         EOF
     - name: Build
       run:
-        dotnet build --no-restore
+        dotnet build
+    - name: Test
+      run: |
+        cd Tests/Core.Test
+        dotnet test

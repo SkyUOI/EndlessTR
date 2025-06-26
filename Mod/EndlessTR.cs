@@ -1,16 +1,6 @@
 using EndlessTR.UI;
 using EndlessTR.WorldGeneration;
 using log4net;
-using log4net.Repository.Hierarchy;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Terraria;
-using Terraria.GameContent.UI.States;
 using Terraria.ModLoader;
 
 namespace EndlessTR
