@@ -5,13 +5,16 @@
 
 	<!-- General -->
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<!-- <TargetFramework>net6.0</TargetFramework> -->
   		<TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
   		<TargetFrameworkVersion>v8.0</TargetFrameworkVersion>
 	</PropertyGroup>
-
-	<!-- References -->
+	<ItemGroup>
+	  <PackageReference Include="SharpNoise" Version="0.12.1.1" />
+	</ItemGroup>
 	<ItemGroup>
 	</ItemGroup>
+
+	<!-- References -->
 
 </Project>
