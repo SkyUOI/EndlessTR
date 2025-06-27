@@ -2,47 +2,12 @@ using MonoMod.Cil;
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.Utilities;
 
 namespace EndlessTR.WorldData;
-
-public static class Debug
-{
-    public static void Error(string s) { throw new Exception(s); }
-    public static Func<T, T> Check<T>(Action<T> f) { return t => { f(t); return t; }; }
-
-    public static void Hack(Type t, string methodName, BindingFlags flag, Action<ILCursor> ilFunc)
-    {
-        MonoModHooks.Modify(t.GetMethod(methodName, flag), il =>
-        {
-            ILCursor cursor = new ILCursor(il);
-            ilFunc(cursor);
-        });
-    }
-
-    public static void CheckNull<T>(T var, string message = "var")
-    {
-        if (var == null)
-        {
-            Error($"{message} == null");
-        }
-    }
-
-    public static void LogIL(ILContext il)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine($"IL for {il.Method.Name}:");
-        foreach (var instr in il.Instrs)
-        {
-            sb.AppendLine($"{instr.OpCode} {instr.Operand}");
-        }
-        EndlessTR.Log.Debug(sb.ToString());
-    }
-}
 
 
 public class ExtendingMap
@@ -137,7 +102,7 @@ public class WorldData
         var Update = typeof(Terraria.Player).GetMethod("Update", BindingFlags.Public | BindingFlags.Instance);
         if (Update == null)
         {
-            Debug.Error("Update == null");
+            throw new Exception("Update == null");
         }
         MonoModHooks.Modify(Update, il =>
         {
@@ -145,7 +110,7 @@ public class WorldData
             var LoadBlocks_ = typeof(WorldData).GetMethod("LoadBlocks", BindingFlags.Static | BindingFlags.Public);
             if (LoadBlocks_ == null)
             {
-                Debug.Error("LoadBlocks_ == null");
+                throw new Exception("LoadBlocks_ == null");
             }
 
             cursor.EmitCall(LoadBlocks_);

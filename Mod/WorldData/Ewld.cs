@@ -61,7 +61,7 @@ namespace EndlessTR.WorldData
                     BindingFlags.Static | BindingFlags.NonPublic);
                 if (EraseWorld == null)
                 {
-                    Debug.Error("HackEraseWorld EraseWorld == null");
+                    throw new Exception("HackEraseWorld EraseWorld == null");
                 }
                 MonoModHooks.Modify(EraseWorld, il =>
                 {
@@ -76,7 +76,7 @@ namespace EndlessTR.WorldData
             }
             catch
             {
-                Debug.Error("HackEraseWorld Error");
+                throw new Exception("HackEraseWorld Error");
             }
 
 
@@ -91,7 +91,7 @@ namespace EndlessTR.WorldData
             }
             catch
             {
-                Debug.Error("EraseWlds Error");
+                throw new Exception("EraseWlds Error");
             }
 
         }
@@ -108,7 +108,7 @@ namespace EndlessTR.WorldData
         public static void ILWriteArchive(ILContext il)
         {
             var cursor = new ILCursor(il);
-            // cursor.EmitDelegate(() => Debug.Error("WriteArchive"));
+            // cursor.EmitDelegate(() => throw new Exception("WriteArchive"));
             cursor.EmitLdarg0();
             cursor.EmitLdarg2();
             cursor.EmitDelegate(BackupWlds);
@@ -121,13 +121,13 @@ namespace EndlessTR.WorldData
             var BackupIO = terraria.GetType("Terraria.ModLoader.BackupIO");
             if (BackupIO == null)
             {
-                Debug.Error("BackupWlds: BackupIO == null");
+                throw new Exception("BackupWlds: BackupIO == null");
             }
 
             var AddZipEntry = BackupIO.GetMethod("AddZipEntry", BindingFlags.Static | BindingFlags.NonPublic);
             if (AddZipEntry == null)
             {
-                Debug.Error("BackupWlds: AddZipEntry == null");
+                throw new Exception("BackupWlds: AddZipEntry == null");
             }
             for (int i = WorldData.blockLeft; i <= WorldData.blockRight; ++i)
             {
@@ -181,15 +181,17 @@ namespace EndlessTR.WorldData
             {
                 BindingFlags flag = BindingFlags.NonPublic | BindingFlags.Static;
                 int _versionNumber = (int)typeof(WorldFile).GetField("_versionNumber", flag).GetValue(null);
-                MethodInfo LoadBestiaryForVersionsBefore210 = 
+                MethodInfo LoadBestiaryForVersionsBefore210 =
                     typeof(WorldFile).GetMethod("LoadBestiaryForVersionsBefore210", flag);
-                if (LoadBestiaryForVersionsBefore210 == null) {
+                if (LoadBestiaryForVersionsBefore210 == null)
+                {
                     throw new Exception("LoadBestiaryForVersionsBefore210 == null");
                 }
 
-                MethodInfo LoadWorld_LastMinuteFixes = 
+                MethodInfo LoadWorld_LastMinuteFixes =
                     typeof(WorldFile).GetMethod("LoadWorld_LastMinuteFixes", flag);
-                if (LoadWorld_LastMinuteFixes == null) {
+                if (LoadWorld_LastMinuteFixes == null)
+                {
                     throw new Exception("LoadWorld_LastMinuteFixes== null");
                 }
 
@@ -292,7 +294,7 @@ namespace EndlessTR.WorldData
             var InternalSaveWorld = typeof(WorldFile).GetMethod("InternalSaveWorld", flag);
             if (InternalSaveWorld == null)
             {
-                Debug.Error("InternalSaveWorld == null");
+                throw new Exception("InternalSaveWorld == null");
             }
             try
             {
@@ -300,12 +302,8 @@ namespace EndlessTR.WorldData
             }
             catch
             {
-                Debug.Error("HackInternalSaveWorld");
+                throw new Exception("HackInternalSaveWorld");
             }
-
-
-            var flag_ = BindingFlags.Public | BindingFlags.Static;
-
 
         }
         public static int LoadWorldEWld(BinaryReader reader)
@@ -339,7 +337,7 @@ namespace EndlessTR.WorldData
             var ValidateWorld = typeof(WorldFile).GetMethod("ValidateWorld", BindingFlags.Static | BindingFlags.Public);
             if (ValidateWorld == null)
             {
-                Debug.Error("ILInternalSaveWorld: ValidateWorld == null");
+                throw new Exception("ILInternalSaveWorld: ValidateWorld == null");
             }
             cursor.GotoNext(MoveType.Before, i => i.MatchLdloc(8) && i.Next.MatchCall(ValidateWorld));
             cursor.RemoveRange(2);
@@ -357,19 +355,19 @@ namespace EndlessTR.WorldData
             {
                 using (BinaryWriter writer = new BinaryWriter(memoryStream))
                 {
-                    int[] pointers = new int[11] {
-                WorldFile.SaveFileFormatHeader(writer),
-                WorldFile.SaveWorldHeader(writer),
-                WorldFile.SaveWorldTiles(writer),
-                WorldFile.SaveChests(writer),
-                WorldFile.SaveSigns(writer),
-                WorldFile.SaveNPCs(writer),
-                WorldFile.SaveTileEntities(writer),
-                WorldFile.SaveWeightedPressurePlates(writer),
-                WorldFile.SaveTownManager(writer),
-                WorldFile.SaveBestiary(writer),
-                WorldFile.SaveCreativePowers(writer)
-            };
+                    int[] pointers = [
+                        WorldFile.SaveFileFormatHeader(writer),
+                        WorldFile.SaveWorldHeader(writer),
+                        WorldFile.SaveWorldTiles(writer),
+                        WorldFile.SaveChests(writer),
+                        WorldFile.SaveSigns(writer),
+                        WorldFile.SaveNPCs(writer),
+                        WorldFile.SaveTileEntities(writer),
+                        WorldFile.SaveWeightedPressurePlates(writer),
+                        WorldFile.SaveTownManager(writer),
+                        WorldFile.SaveBestiary(writer),
+                        WorldFile.SaveCreativePowers(writer)
+                    ];
 
                     WorldFile.SaveFooter(writer);
                     WorldFile.SaveHeaderPointers(writer, pointers);

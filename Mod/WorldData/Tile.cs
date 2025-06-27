@@ -57,7 +57,12 @@ namespace EndlessTR.WorldData
             MethodInfo[] dfs(Type type)
             {
                 if (methodMap.ContainsKey(type)) return [];
-                Debug.CheckNull(type, "DfsGetAllMethods: type");
+                if (type == null)
+                {
+
+                    throw new Exception("DfsGetAllMethods: type");
+                }
+
                 methodMap.Add(type, true);
 
                 // 获取该类下直接的方法 
@@ -100,7 +105,7 @@ namespace EndlessTR.WorldData
                 }
                 catch
                 {
-                    Debug.Error($"HackWorldFile: methodName: {method.DeclaringType.FullName}.{method.Name}");
+                    throw new Exception($"HackWorldFile: methodName: {method.DeclaringType.FullName}.{method.Name}");
                 }
 
             }
@@ -121,11 +126,20 @@ namespace EndlessTR.WorldData
             if (method.newMethod == null)
             {
                 var EndlessTR = typeof(EndlessTR).Assembly;
-                Debug.CheckNull(EndlessTR, "EndlessTR");
+                if (EndlessTR == null)
+                {
+                    throw new Exception("EndlessTR");
+                }
                 var type = EndlessTR.GetType(GetDeclaringType(method.declaringType));
-                Debug.CheckNull(type, $" {GetDeclaringType(method.declaringType)}type");
+                if (type == null)
+                {
+                    throw new Exception($" {GetDeclaringType(method.declaringType)}type");
+                }
                 method.newMethod = type.GetMethod(method.name, BindingFlags.Public | BindingFlags.Static);
-                Debug.CheckNull(method.newMethod, $"ReplaceMethod: {GetDeclaringType(method.declaringType)}.{method.name}");
+                if (method.newMethod == null)
+                {
+                    throw new Exception($"ReplaceMethod: {GetDeclaringType(method.declaringType)}.{method.name}");
+                }
             }
             while (cursor.TryGotoNext(i => i.MatchCall(out var t)
                             && t.DeclaringType.FullName == method.declaringType && t.Name == method.name))
@@ -150,20 +164,20 @@ namespace EndlessTR.WorldData
                 {
                     // EndlessTR.Log.Info($"Hack WorldGen method: {method.DeclaringType.FullName}.{method.Name}");
                     MonoModHooks.Modify(method, il =>
-                    {    
+                    {
                         ILCursor cursor = new ILCursor(il);
-                    ReplaceMethods(cursor, [
-                        ("Terraria.Tilemap", "get_Item", WorldGenGetTile),
+                        ReplaceMethods(cursor, [
+                            ("Terraria.Tilemap", "get_Item", WorldGenGetTile),
                             ("Terraria.NPC", "ResetBadgerHatTime", null),
                             ("Terraria.Main", "ResetWindCounter", null),
                             ("Terraria.NPC", "ResetKillCount", null),
                             ("Terraria.Main", "checkXMas", null),
                             ("Terraria.Main", "checkHalloween", null),
                             ]);
-                    // 修改世界生成时用到的各种变量
-                    ReplaceVars(cursor,
-                    [
-                        ("Terraria.Main", "ladyBugRainBoost"),
+                        // 修改世界生成时用到的各种变量
+                        ReplaceVars(cursor,
+                        [
+                            ("Terraria.Main", "ladyBugRainBoost"),
                             ("Terraria.Main", "getGoodWorld"),
                             ("Terraria.Main", "drunkWorld"),
                             ("Terraria.Main", "tenthAnniversaryWorld"),
@@ -214,7 +228,7 @@ namespace EndlessTR.WorldData
                 }
                 catch
                 {
-                    Debug.Error($"HackWorldGen: methodName: {method.DeclaringType.Name}.{method.Name}");
+                    throw new Exception($"HackWorldGen: methodName: {method.DeclaringType.Name}.{method.Name}");
                 }
 
             }
@@ -232,24 +246,15 @@ namespace EndlessTR.WorldData
         {
             // EndlessTR.Log.Info($"replace var {var.declaringType}.{var.Name}");
             var type = typeof(EndlessTR).Assembly.GetType(GetDeclaringType(var.declaringType));
-            Debug.CheckNull(type, $"replaceVar: {GetDeclaringType(var.declaringType)} type");
+            if (type == null)
+            {
+                throw new Exception($"replaceVar: {GetDeclaringType(var.declaringType)} type");
+            }
 
             var field = type.GetField(var.Name);
-            Debug.CheckNull(field, $"ReplaceVar {var.declaringType}.{var.Name}: field");
-
-            try
+            if (field == null)
             {
-                cursor.Index = 0;
-                while (cursor.TryGotoNext(i => i.MatchStfld(out var t)
-                            && t.DeclaringType.FullName == var.declaringType && t.Name == var.Name))
-                {
-                    cursor.Remove();
-                    cursor.EmitStfld(field);
-                }
-            }
-            catch
-            {
-                Debug.Error($"TileHack.ReplaceVars Hack stfld {var.declaringType}.{var.Name} Error");
+                throw new Exception($"ReplaceVar {var.declaringType}.{var.Name}: field");
             }
 
             try
@@ -264,7 +269,22 @@ namespace EndlessTR.WorldData
             }
             catch
             {
-                Debug.Error($"TileHack.ReplaceVars Hack ldfld {var.declaringType}.{var.Name} Error");
+                throw new Exception($"TileHack.ReplaceVars Hack stfld {var.declaringType}.{var.Name} Error");
+            }
+
+            try
+            {
+                cursor.Index = 0;
+                while (cursor.TryGotoNext(i => i.MatchStfld(out var t)
+                            && t.DeclaringType.FullName == var.declaringType && t.Name == var.Name))
+                {
+                    cursor.Remove();
+                    cursor.EmitStfld(field);
+                }
+            }
+            catch
+            {
+                throw new Exception($"TileHack.ReplaceVars Hack ldfld {var.declaringType}.{var.Name} Error");
             }
         }
 
