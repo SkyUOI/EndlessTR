@@ -11,6 +11,7 @@ public class PlayerHacker
     public static void Hack()
     {
         HackBordersMovement();
+        // HackCameraUpdate();
     }
 
     private static void HackBordersMovement()
@@ -22,6 +23,15 @@ public class PlayerHacker
             throw new System.Exception("BordersMovement");
         }
         MonoModHooks.Modify(method, BordersMovementIL);
+    }
+
+    private static void HackCameraUpdate() {
+        var flag = BindingFlags.NonPublic | BindingFlags.Instance;
+        var method = typeof(Terraria.Main).GetMethod("DoDraw_UpdateCameraPosition", flag);
+        if (method is null)
+        {
+            throw new System.Exception("DoDraw_UpdateCameraPosition");
+        }
     }
 
     private static void BordersMovementIL(ILContext il)
