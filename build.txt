@@ -1,3 +1,4 @@
 displayName = EndlessTR
 author = SkyUOI
 version = 0.1
+buildIgnore = Tests/*
