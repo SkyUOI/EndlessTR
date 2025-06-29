@@ -40,7 +40,8 @@ public partial class WorldGeneration
     public static void GenerateBlock()
     {
         ResetBlock();
-        Dunes();
+        // Dunes();
+        MapGeneration.GenerateHeightMap();
     }
 
     public static void GenerateInitialBlock()

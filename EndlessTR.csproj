@@ -16,9 +16,6 @@
 	<ItemGroup>
     	<Compile Include="Mod/**/*.cs" />
 	</ItemGroup>
-	<ItemGroup>
-	  <PackageReference Include="sharpnoise" Version="0.12.1.1" />
-	</ItemGroup>
 
 	<!-- References -->
 
